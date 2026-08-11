@@ -57,6 +57,26 @@ describe('MapView', () => {
     )
   })
 
+  it('leaves the map reachable by default', () => {
+    const { container } = render(<MapView />)
+
+    expect(container.firstElementChild).not.toHaveAttribute('inert')
+  })
+
+  it('makes the map unreachable while it is dormant, without rebuilding it (FR-001)', () => {
+    // Behind the credentials screen the map is scenery: it is still drawn, and
+    // still the same Leaflet instance, but nothing in it answers a pointer or
+    // takes a tab stop — Leaflet gives its container one of its own for the
+    // keyboard pan, and a control tabbable behind a modal is reachable.
+    const { container, rerender } = render(<MapView dormant />)
+
+    expect(container.firstElementChild).toHaveAttribute('inert')
+
+    rerender(<MapView />)
+
+    expect(container.firstElementChild).not.toHaveAttribute('inert')
+  })
+
   it('renders its children inside the map container so overlays can use the map instance', () => {
     render(
       <MapView>

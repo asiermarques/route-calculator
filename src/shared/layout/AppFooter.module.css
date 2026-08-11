@@ -1,6 +1,19 @@
-/* The bottom half of the shell. Same panel as the header, same phone-first
- * behaviour: one row while the controls fit side by side, wrapping to two when
- * they don't. */
+/* The bottom half of the shell. Phone-first, and in two arrangements built
+ * from one set of markup:
+ *
+ * - Narrow: one panel spanning the width, the same bar as the header, wrapping
+ *   to as many rows as its controls need.
+ * - Wide (60rem and up): two panels instead — the actions
+ *   at one end, zoom at the other, with nothing but map between them. A single
+ *   bar there is a band of dark panel drawn across the bottom of a map that has
+ *   nothing under it: on a laptop the controls occupy maybe a third of that
+ *   width and the rest is a curtain over the thing the app exists to show.
+ *
+ * The bar is the *narrow* case and not a desktop layout squeezed: this is the
+ * only arrangement that fits a phone, where there is no width to spend on a gap
+ * between two panels and every control has to reach the edges to be worth its
+ * row.
+ */
 .footer {
   position: absolute;
   /* Clears Leaflet's attribution strip along the very bottom, which is all it
@@ -23,12 +36,100 @@
   animation: footerIn 460ms cubic-bezier(0.2, 0.9, 0.2, 1) 120ms both;
 }
 
+/* Not a box while the footer is one bar: the status, the add control and the
+ * corrections are direct items of the bar, so they wrap against it the way
+ * they always have. It becomes the left-hand panel at the split below, which
+ * is the one place the grouping is real. */
+.actions {
+  display: contents;
+}
+
 .add,
 .corrections {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   min-width: 0;
+}
+
+/* Keeps the corrections beside zoom at the end of whichever row they land on,
+ * rather than stranded at the far side of a wrapped one. */
+.corrections {
+  margin-left: auto;
+}
+
+.zoom {
+  display: flex;
+  align-items: center;
+}
+
+/* On the smallest phones the bars take the edge margin back: at 360px the
+ * corrections and the zoom pair are a dozen pixels wider than the row they
+ * share, and the row breaks into two — a third row of bar over a map that has
+ * 640px of height in all. `AppHeader` narrows its offset at the same width, so
+ * the two bars still line up with each other. */
+@media (max-width: 25rem) {
+  .footer {
+    left: var(--space-sm);
+    right: var(--space-sm);
+  }
+}
+
+@media (min-width: 60rem) {
+  /* The bar stops being a panel and becomes the frame the two panels are
+   * placed in: full width still, so they sit against opposite edges, but
+   * drawing nothing itself — and, just as importantly, catching nothing. An
+   * invisible full-width strip across the bottom of the map still answers
+   * every click that lands on it, and this one answers by *swallowing* it
+   * (`useDisableMapClickPropagation`): the gap it opens over the map would
+   * look like map and behave like a panel. The panels take their own clicks
+   * back below, and events from them still bubble through this element, so the
+   * guard that keeps a press on a control from placing a waypoint under it
+   * goes on working. */
+  .footer {
+    align-items: flex-end;
+    gap: var(--space-md);
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
+  .actions,
+  .zoom {
+    pointer-events: auto;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    /* A routing error is prose, and prose in a shrink-to-fit panel would pull
+     * this one back across the map the bar was just taken off. Past this it
+     * wraps instead. */
+    max-width: 34rem;
+    padding: var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-panel);
+  }
+
+  /* Inside their own panel the two controls sit together; the auto margin is
+   * what spread them apart in the single bar. */
+  .corrections {
+    margin-left: 0;
+  }
+
+  .zoom {
+    padding: var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-panel);
+  }
 }
 
 @keyframes footerIn {

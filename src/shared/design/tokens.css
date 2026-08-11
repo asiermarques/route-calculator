@@ -46,8 +46,13 @@
    * lands on a dark panel and never inside an accent-filled button. */
   --color-focus: #d7ff3c;
   --color-shadow: rgba(0, 0, 0, 0.85);
-  /* The veil the credentials screen draws over whatever is behind it. */
-  --color-scrim: rgba(4, 7, 6, 0.86);
+  /* The veil the credentials screen draws over what is behind it — which is
+   * always the map, from the first load onwards (App.tsx). Thin, because it is
+   * no longer the only thing holding the two apart: behind it the map turns
+   * itself dark (`MapView`'s dormant state) and the screen blurs it, so this
+   * only has to settle the whole backdrop a stop below the card, which carries
+   * its own opaque surface and takes none of its contrast from here. */
+  --color-scrim: rgba(4, 7, 6, 0.5);
 
   /* --- Elevation ------------------------------------------------------- */
   /* Long and soft, and dark rather than grey: over a light map a dark panel

@@ -34,3 +34,15 @@
   border-color: transparent;
   cursor: default;
 }
+
+/* On a small phone these two, the zoom pair and the footer's own padding come
+ * to a dozen pixels more than the screen has, and the row they share breaks
+ * into two — a third row of bar over a map that has 640px of height in total.
+ * Tightening the label's side padding is the whole difference. The height is
+ * untouched: it is the touch target (docs/DESIGN.md), and it is not what runs
+ * out of room here. */
+@media (max-width: 25rem) {
+  .button {
+    padding: 0 var(--space-sm);
+  }
+}

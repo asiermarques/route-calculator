@@ -26,6 +26,28 @@
  * is drawn in, which is the whole point of muting the tiles. */
 .map :global(.leaflet-tile-pane) {
   filter: saturate(0.62) contrast(1.04) brightness(1.03);
+  /* The map dims into, and lifts back out of, the state below as the
+   * credentials screen opens and closes — one transition on one event, not
+   * ambience, and off entirely under `prefers-reduced-motion` like the rest of
+   * the app's motion. */
+  transition: filter 420ms ease;
+}
+
+/* Behind the credentials screen the map is scenery, not an instrument
+ * (`MapView`'s `dormant`). Inverted to a dark-mode map rather than merely
+ * dimmed: a bright street map is the one thing on this palette that cannot be
+ * put behind something without looking like it is being covered up, and
+ * turning it dark makes it part of the same instrument — pale roads on near
+ * black, the card the only lit surface, and the route (in the overlay pane,
+ * untouched by this) still the one thing drawn in the accent when the screen
+ * is reopened over a drawn route. Same pane as the rule above and for the same
+ * reason — never the container.
+ *
+ * Set on the wrapper *around* the map rather than on the map element: the
+ * class on that element is fixed at mount by react-leaflet (see `MapView`).
+ * It wins over the rule above by coming after it at equal specificity. */
+.dormant :global(.leaflet-tile-pane) {
+  filter: invert(1) grayscale(1) brightness(0.92) contrast(0.88);
 }
 
 /* Leaflet's own controls, brought onto this palette. Their *size* is still
@@ -65,4 +87,10 @@
 
 .map :global(.leaflet-control-attribution a) {
   color: var(--color-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map :global(.leaflet-tile-pane) {
+    transition: none;
+  }
 }

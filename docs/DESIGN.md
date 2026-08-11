@@ -21,6 +21,14 @@ acts on it: add-waypoint, undo/clear, and the routing status. Both are in
 own, for its attribution. Two bars and an untouched map
 between them is the whole layout.
 
+On a wide screen the footer stops being a bar: at 60rem it splits into the two
+panels it is really made of — the actions at one end, zoom at the other, map
+showing through between them. A bar is the arrangement a phone forces, where
+there is no width to spend on a gap and the controls need the edges; carried on
+to a laptop it is a band of dark panel drawn across the bottom of a map the
+controls only occupy a third of. The header stays whole, because what is in it
+does fill the width it has.
+
 ## Type
 
 Two families, both self-hosted from `public/fonts/` and declared in
@@ -44,7 +52,7 @@ values or bare pixel spacing in component styles.
 | --- | --- | --- |
 | `--color-surface` | `#0b0f0e` | Every overlay panel: the header bar, the routing status, the waypoint options, the credentials card. |
 | `--color-surface-raised` | `#181f1c` | A control *inside* a panel — a field, a hovered button. On this palette raised means lighter. |
-| `--color-void` | `#050807` | Behind everything, seen only before the map exists (first load of the credentials screen). |
+| `--color-void` | `#050807` | Behind everything, seen only in the moment before the first tiles land. |
 | `--color-text` | `#f1f5ef` | Default text on a surface. |
 | `--color-text-muted` | `#9aa79d` | Secondary prose and micro-labels. 6.7:1 on `--color-surface` — dimmed, never below what body text needs. |
 | `--color-border` | `rgba(215, 255, 60, 0.16)` | Panel and field hairlines. Light-on-dark, not a grey line: a solid mid-grey border reads heavier than the panel it encloses. |
@@ -58,7 +66,7 @@ values or bare pixel spacing in component styles.
 | `--color-error-veil` | `rgba(255, 122, 92, 0.08)` | Fill of the unrestrictable-key warning callout. |
 | `--color-focus` | `#d7ff3c` | Keyboard focus ring, app-wide. |
 | `--color-shadow` | `rgba(0, 0, 0, 0.85)` | The colour the elevation tokens are built from. |
-| `--color-scrim` | `rgba(4, 7, 6, 0.86)` | The veil the credentials screen draws over what is behind it. |
+| `--color-scrim` | `rgba(4, 7, 6, 0.5)` | The veil the credentials screen draws over the map behind it. Thin: the map turns itself dark under it and the screen blurs it, so this only has to settle the backdrop a stop below the card. |
 | `--shadow-panel` | long drop + inset top highlight | Any floating panel. The highlight is the top edge catching light, which is what stops a black rectangle reading as a hole. |
 | `--shadow-control` | shorter drop | A single button floating on the map. |
 | `--shadow-modal` | longest drop | The credentials card. |
@@ -80,7 +88,7 @@ values or bare pixel spacing in component styles.
 | `--font-distance` | `700 clamp(2.5rem, 11vw, 4.25rem)/0.82 Saira Condensed` | The distance figure. Scales with the viewport, since the bar it sits in goes from a phone's width to a laptop's. |
 | `--tracking-label`, `--tracking-action` | `0.14em`, `0.06em` | Letter-spacing for the two uppercase styles above. |
 | `--z-overlay` | `1000` | Overlay controls above Leaflet's own panes. |
-| `--z-modal` | `1100` | The credentials screen when reopened over the running app — above every `--z-overlay` control, not just the map. |
+| `--z-modal` | `1100` | The credentials screen, over the map on first load and over the running app when reopened — above every `--z-overlay` control, not just the map. |
 
 ## Rules
 
@@ -99,10 +107,27 @@ values or bare pixel spacing in component styles.
   the name and the distance facing each other across the first, the search
   spanning the second — because no arrangement fits a field, a button and a
   display figure on one 360px line. It becomes a single row at `44rem`, which is
-  also where a phone in landscape lands. The footer does the same by wrapping,
-  with no breakpoint of its own: add-waypoint and undo/clear share a row while
-  they fit and take one each when they don't. Nothing is positioned from either
-  bar's height, so both are free to be intrinsic.
+  also where a phone in landscape lands. The footer does the same by wrapping:
+  add-waypoint and undo/clear share a row while they fit and take one each when
+  they don't. Nothing is positioned from either bar's height, so both are free
+  to be intrinsic.
+- **The footer is one bar or two panels, from one set of markup.** Below
+  `60rem` the `<footer>` is the panel and the wrapper around the actions is
+  `display: contents`, so the status, add-waypoint and undo/clear wrap against
+  the bar exactly as they did when it was flat. At `60rem` that wrapper becomes
+  a panel and the `<footer>` becomes the frame the two panels are placed in:
+  transparent, and `pointer-events: none`, with the panels taking their own
+  clicks back. That last part is not a detail — the frame still spans the
+  width, and an invisible strip across the bottom of the map that answers
+  clicks (and swallows them, `useDisableMapClickPropagation`) makes the gap it
+  opens look like map and behave like a panel.
+- **Below `25rem` both bars narrow their viewport-edge offset** from
+  `--space-lg` to `--space-sm`. At 360px the corrections and the zoom pair are
+  a dozen pixels wider than the row they share, and without those pixels the
+  footer takes a third row of a screen that has 640px of height in all — while
+  the alternative that fits, letting the zoom pair hang over the panel's edge,
+  is not one. `AppHeader` narrows at the same width for no reason of its own,
+  so the two bars stay the same width as each other.
 - **Everything is `border-box`** (`src/index.css`). Overlay controls are sized
   by a minimum height that doubles as the row height the corner-stacking
   offsets are computed from; under `content-box` that height would exclude
@@ -150,20 +175,36 @@ values or bare pixel spacing in component styles.
   (`--space-map-bottom`) and otherwise runs the full width.
   `e2e/overlay-layout.spec.ts` asserts every control stays apart at phone,
   tablet and desktop widths.
-- **The routing status is a row of the footer, not a panel that appears.**
+- **The routing status is a row of the footer's actions, not a panel that
+  appears.**
   Availability of a third-party service is a normal operating condition here
   (docs/ARCHITECTURE.md), so what the provider is doing belongs in the shell.
   The element stays in the DOM while it is empty — it is a live region, and one
   inserted together with its first message is announced unreliably — so it is
   never `display: none`, and it carries its own margin instead of the bar
   giving it a `gap` that would show while it is empty.
-- The credentials screen breaks the "everything lives inside the map" pattern
-  by design: on first load it *is* the whole page, since no map exists yet to
-  sit on top of. Reopened (US-005) it becomes a full-viewport modal over the
-  running app instead, on `--z-modal` — one level above `--z-overlay` — so it
-  sits above every overlay control, not only the map underneath them. It is
-  also the one screen a visitor to a public deploy sees before anything else,
-  which is why it carries the app's name (`shared/brand/AppMark`).
+- **The credentials screen is shown over the map, never instead of it.** It is
+  a full-viewport modal on `--z-modal` — one level above `--z-overlay`, so it
+  sits above every overlay control and not only the map underneath them — on
+  both of its showings: reopened over the running app (US-005), and on first
+  load, where the map is mounted outside the credentials gate for it to be
+  shown over (`App.tsx`). It is the one screen a visitor to a public deploy
+  sees before anything else, which is why it carries the app's name
+  (`shared/brand/AppMark`); what it is over is the thing they came for, rather
+  than a black rectangle in front of nothing.
+- **The map behind that screen is dormant, and that is a functional
+  requirement, not a finish** (FR-001). Drawn, and unreachable: the wrapper
+  around it takes the `inert` attribute, which is what covers the tab stop
+  Leaflet gives its own container for the arrow-key pan — a control the visitor
+  can tab to behind a modal is as reachable as one they can click, and
+  `pointer-events: none` would not have covered it. None of the app's own
+  controls exist while the gate is closed, so there is nothing there to draw a
+  route with either. The instance itself is deliberately *not* conditional on
+  credentials: supplying a key adds the controls to a map that is already
+  loaded rather than swapping it for a second one, and Leaflet reads its
+  interaction options once at construction, so a map built inert would have
+  stayed inert. It follows that `className` on `MapContainer` is fixed at mount
+  by react-leaflet — anything that toggles goes on the wrapper.
 - One palette, deliberately — a dark one, matching the product's "one screen,
   one job" principle. `src/index.css` therefore declares `color-scheme: dark`:
   a `<select>` drop-down, a scrollbar and a caret all come from the OS theme,

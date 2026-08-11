@@ -6,15 +6,41 @@ import { supplyCredentials } from './support/supply-credentials'
 /** The credentials screen (US-001–US-004): a production build ships no
  * routing API key, so every visitor sees this screen before the map. */
 
-test('a production build opens on the credentials screen, with no map, address search or drawing surface reachable (FR-001)', async ({
+test('a production build opens on the credentials screen, with no address search or drawing surface reachable (FR-001)', async ({
   page,
 }) => {
   await mockTiles(page)
   await page.goto('/')
 
   await expect(page.getByRole('combobox', { name: /routing provider/i })).toBeVisible()
-  await expect(page.locator('.leaflet-container')).toHaveCount(0)
   await expect(page.getByRole('textbox', { name: /address/i })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /add waypoint/i })).toHaveCount(0)
+})
+
+test('the map behind the credentials screen is scenery: visible, but answering nothing (FR-001)', async ({
+  page,
+}) => {
+  await mockTiles(page)
+  await mockRouting(page, [{ distanceMeters: 1000 }])
+  await page.goto('/')
+
+  // It is drawn — the screen is a veil over the thing the visitor came for,
+  // not a black rectangle in front of nothing (docs/DESIGN.md) …
+  const map = page.locator('.leaflet-container')
+  await expect(map).toBeVisible()
+
+  // … and it is inert: a click at the middle of the screen reaches the veil
+  // and stops there, rather than placing a waypoint on the map underneath.
+  const box = (await map.boundingBox())!
+  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.25)
+  await expect(page.locator('path[fill="var(--color-waypoint)"]')).toHaveCount(0)
+
+  // Nor can the keyboard get to it: Leaflet gives its container a tab stop of
+  // its own for the arrow-key pan, which behind a modal would be a way into
+  // the app the screen is supposed to be holding shut.
+  await expect(map).toHaveAttribute('tabindex', '0')
+  await map.focus()
+  await expect(map).not.toBeFocused()
 })
 
 test('selecting a provider and entering a key reveals the map and behaves as usual (US-001)', async ({ page }) => {
@@ -50,7 +76,10 @@ test('submitting a whitespace-only key keeps the screen too (EDGE-003)', async (
   await page.getByRole('button', { name: /continue/i }).click()
 
   await expect(page.getByRole('alert')).toBeVisible()
-  await expect(page.locator('.leaflet-container')).toHaveCount(0)
+  // The app's own controls, not the map: the map is the backdrop this screen
+  // is shown over from the first load, so its presence says nothing about
+  // whether the app behind it has been unlocked.
+  await expect(page.getByRole('textbox', { name: /address/i })).toHaveCount(0)
 })
 
 test('reloading after supplying credentials returns to the credentials screen with the key gone (BR-001)', async ({
@@ -66,7 +95,7 @@ test('reloading after supplying credentials returns to the credentials screen wi
 
   await expect(page.getByRole('combobox', { name: /routing provider/i })).toBeVisible()
   await expect(page.getByLabel(/api key/i)).toHaveValue('')
-  await expect(page.locator('.leaflet-container')).toHaveCount(0)
+  await expect(page.getByRole('textbox', { name: /address/i })).toHaveCount(0)
 })
 
 test('no routing API key is ever present in any browser storage (BR-001)', async ({ page }) => {

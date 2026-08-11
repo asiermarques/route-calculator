@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { mockTiles } from './support/mock-tiles'
 import { mockRouting } from './support/mock-routing'
 import { supplyCredentials } from './support/supply-credentials'
@@ -23,6 +24,66 @@ const VIEWPORTS = [
   { name: 'tablet', width: 768, height: 1024 },
   { name: 'desktop', width: 1280, height: 800 },
 ]
+
+/** What is under a point of the viewport: the map itself, or something drawn
+ * over it. `elementFromPoint` answers the same question a click does. */
+async function coveringTheMapAt(page: Page, x: number, y: number) {
+  return await page.evaluate(
+    ([px, py]) => {
+      const element = document.elementFromPoint(px, py)
+      return element?.closest('footer, header') ? 'an overlay' : 'the map'
+    },
+    [x, y],
+  )
+}
+
+test('on a wide screen the footer is two panels with map between them, not one bar across the bottom', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockTiles(page)
+  await mockRouting(page, [{ distanceMeters: 1000 }])
+  await page.goto('/')
+  await supplyCredentials(page)
+
+  const clear = (await page.getByRole('button', { name: /^clear$/i }).boundingBox())!
+  const zoomOut = (await page.getByRole('button', { name: /zoom out/i }).boundingBox())!
+
+  // The controls occupy a third of a laptop's width; a single bar spanning the
+  // rest is a curtain drawn over the thing the app exists to show.
+  expect(zoomOut.x - (clear.x + clear.width)).toBeGreaterThan(400)
+
+  // And what shows through between them is map in both senses: it is drawn
+  // there, and a click there reaches it. The strip the two panels are placed
+  // in still spans the width, and an invisible strip that answers clicks is
+  // the same lost map with none of the honesty.
+  const middle = { x: 640, y: clear.y + clear.height / 2 }
+  expect(await coveringTheMapAt(page, middle.x, middle.y)).toBe('the map')
+  await page.mouse.click(middle.x, middle.y)
+  await expect(page.locator('path[fill="var(--color-waypoint)"]')).toHaveCount(1)
+})
+
+test('on a phone the footer stays a single bar, with every control inside it', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 700 })
+  await mockTiles(page)
+  await mockRouting(page, [{ distanceMeters: 1000 }])
+  await page.goto('/')
+  await supplyCredentials(page)
+
+  // Two panels and a gap is a wide-screen luxury: at 375px there is no width
+  // to spend on the gap, and the controls need the edges. What there *is* room
+  // for is getting them all inside the panel — the zoom pair used to hang over
+  // its right edge, on a bar that draws its own border around itself.
+  const bar = (await page.locator('footer').boundingBox())!
+  for (const name of [/add waypoint/i, /remove last waypoint/i, /^clear$/i, /zoom in/i, /zoom out/i]) {
+    const control = (await page.getByRole('button', { name }).boundingBox())!
+    expect(control.x, `${name} starts left of the bar`).toBeGreaterThanOrEqual(bar.x)
+    expect(
+      control.x + control.width,
+      `${name} runs past the right edge of the bar`,
+    ).toBeLessThanOrEqual(bar.x + bar.width)
+  }
+})
 
 for (const viewport of VIEWPORTS) {
   test(`overlay controls never cover each other on ${viewport.name}, error message included`, async ({

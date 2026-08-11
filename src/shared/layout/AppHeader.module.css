@@ -64,6 +64,16 @@
   align-items: center;
 }
 
+/* The smallest phones give the bars their edge margin back — see the matching
+ * rule in `AppFooter.module.css`, which is where the width is actually needed.
+ * This one is here so the two bars stay the same width as each other. */
+@media (max-width: 25rem) {
+  .header {
+    left: var(--space-sm);
+    right: var(--space-sm);
+  }
+}
+
 @media (min-width: 44rem) {
   .header {
     grid-template-columns: auto minmax(0, 1fr) auto auto;

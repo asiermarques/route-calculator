@@ -3,8 +3,10 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 vi.mock('./shared/map/MapView', () => ({
-  MapView: ({ children }: { children?: React.ReactNode }) => (
-    <div data-testid="map-view">{children}</div>
+  MapView: ({ children, dormant }: { children?: React.ReactNode; dormant?: boolean }) => (
+    <div data-testid="map-view" data-dormant={String(dormant ?? false)}>
+      {children}
+    </div>
   ),
 }))
 
@@ -114,13 +116,45 @@ function baseCredentials(overrides: Partial<ReturnType<typeof useCredentials>> =
 }
 
 describe('App', () => {
-  it('shows the credentials screen and no map when no routing provider is configured yet (FR-001)', () => {
+  it('shows the credentials screen over a map that is drawn but unreachable when no routing provider is configured yet (FR-001)', () => {
     useCredentials.mockReturnValue(baseCredentials())
 
     render(<App />)
 
     expect(screen.getByTestId('credentials-screen')).toBeInTheDocument()
-    expect(screen.queryByTestId('map-view')).not.toBeInTheDocument()
+    // The map is the backdrop the screen is shown over (docs/DESIGN.md), so it
+    // is present — but dormant, and with none of the controls that would make
+    // it a drawing surface: what FR-001 holds back is the app, not the view.
+    expect(screen.getByTestId('map-view')).toHaveAttribute('data-dormant', 'true')
+    expect(screen.queryByTestId('address-search-bar')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('route-layer')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('add-waypoint-control')).not.toBeInTheDocument()
+  })
+
+  it('wakes the map up once the credentials screen is gone, and puts it back to sleep when it is reopened (US-005)', () => {
+    useCredentials.mockReturnValue(
+      baseCredentials({ routingProvider: { getRoute: vi.fn() }, isCredentialsScreenOpen: false }),
+    )
+    useRoute.mockReturnValue({
+      waypoints: [],
+      path: [],
+      distanceMeters: 0,
+      isRouting: false,
+      error: null,
+      addWaypoint: vi.fn(),
+      undo,
+      clear,
+    })
+
+    const { rerender } = render(<App />)
+    expect(screen.getByTestId('map-view')).toHaveAttribute('data-dormant', 'false')
+
+    useCredentials.mockReturnValue(
+      baseCredentials({ routingProvider: { getRoute: vi.fn() }, isCredentialsScreenOpen: true }),
+    )
+    rerender(<App />)
+
+    expect(screen.getByTestId('map-view')).toHaveAttribute('data-dormant', 'true')
   })
 
   it('passes credentials the visitor supplies through to useCredentials (US-001)', async () => {

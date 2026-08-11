@@ -19,9 +19,10 @@ type RoutePlannerProps = {
   onReopenCredentials: () => void
 }
 
-/** Composes the map with every slice that draws or corrects a route. The
- * route state lives here, in `useRoute`, and is passed down as props — the
- * route-drawing and route-correction slices don't import each other.
+/** Everything that draws or corrects a route, rendered *inside* `MapView` by
+ * `App` below. The route state lives here, in `useRoute`, and is passed down
+ * as props — the route-drawing and route-correction slices don't import each
+ * other.
  *
  * The two bars are the same arrangement: `AppHeader` and `AppFooter` are
  * shells that know where a control goes, and this is the only place that knows
@@ -31,7 +32,7 @@ function RoutePlanner({ routingProvider, onReopenCredentials }: RoutePlannerProp
   const hasWaypoints = route.waypoints.length > 0
 
   return (
-    <MapView>
+    <>
       <AppHeader
         search={<AddressSearchBar />}
         readout={<DistanceReadout distanceMeters={route.distanceMeters} />}
@@ -57,16 +58,25 @@ function RoutePlanner({ routingProvider, onReopenCredentials }: RoutePlannerProp
         status={<RoutingStatus isRouting={route.isRouting} error={route.error} />}
         zoom={<ZoomControls />}
       />
-    </MapView>
+    </>
   )
 }
 
-/** Gates the app behind a routing credential (FR-001): the map, address
- * search and drawing surface are not reachable until a provider and key
- * have been supplied, either by the visitor on the credentials screen or by
- * `.env` in development (US-001, US-002). Once configured, the credentials
- * screen is also reachable *from* the app, as a modal over the still-mounted
- * map — reopening it must not discard the drawn route (US-005). */
+/** Gates the app behind a routing credential (FR-001): the address search and
+ * the drawing surface are not reachable until a provider and key have been
+ * supplied, either by the visitor on the credentials screen or by `.env` in
+ * development (US-001, US-002). Once configured, the credentials screen is
+ * also reachable *from* the app, as a modal over the still-mounted map —
+ * reopening it must not discard the drawn route (US-005).
+ *
+ * The map itself is outside the gate, and is what the credentials screen is
+ * shown over from the first load: the screen is a veil over the thing the
+ * visitor came for rather than a black rectangle in front of nothing
+ * (docs/DESIGN.md). Gated it is `dormant` — drawn, but answering no pointer,
+ * key or tab stop — so what FR-001 holds back is still held back. It also
+ * means one Leaflet instance for the life of the page: supplying a key adds
+ * the controls to a map that is already there and already loaded, instead of
+ * swapping it for a second one. */
 function App() {
   const {
     routingProvider,
@@ -79,9 +89,11 @@ function App() {
 
   return (
     <>
-      {routingProvider && (
-        <RoutePlanner routingProvider={routingProvider} onReopenCredentials={reopenCredentialsScreen} />
-      )}
+      <MapView dormant={isCredentialsScreenOpen}>
+        {routingProvider && (
+          <RoutePlanner routingProvider={routingProvider} onReopenCredentials={reopenCredentialsScreen} />
+        )}
+      </MapView>
       {isCredentialsScreenOpen && (
         <CredentialsScreen
           onSubmit={setCredentials}
