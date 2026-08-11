@@ -21,12 +21,20 @@
   --radius: 0.25rem;
   --radius-lg: 0.5rem;
 
-  --size-control-row: 2.25rem;
+  /* 44px: the smallest control a finger hits reliably, and therefore both the
+   * minimum size of every interactive overlay control and the height of one
+   * row of them — the two have to be the same number for the offsets that
+   * stack one panel above another to stay correct. */
+  --size-control-row: 2.75rem;
   --size-readout-column: 6rem;
   --space-map-bottom: 2.5rem;
   --space-map-bottom-right: 6rem;
 
   --font-ui: 14px/1.4 system-ui, sans-serif;
+  /* 16px, not `--font-ui`'s 14px: mobile Safari zooms the page in on a focused
+   * field whose text is smaller than 16px, and never zooms back out — on a
+   * full-viewport map that leaves the visitor stranded at the wrong scale. */
+  --font-ui-field: 16px/1.4 system-ui, sans-serif;
 
   --z-overlay: 1000;
   --z-modal: 1100;

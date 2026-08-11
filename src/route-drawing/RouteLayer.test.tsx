@@ -153,6 +153,46 @@ describe('RouteLayer', () => {
     expect(region).toHaveTextContent(/could not find a route/i)
   })
 
+  describe('waypoint size by pointer', () => {
+    const w1 = { id: 'w1', lat: 40.4, lng: -3.7 }
+
+    /** A `matchMedia` that answers `true` for exactly one query, so a test can
+     * say which kind of pointer the device has without stubbing the shape of
+     * `MediaQueryList` at every call site. */
+    function stubPointer(matching: string) {
+      const original = window.matchMedia
+      window.matchMedia = ((query: string) =>
+        ({
+          ...original(query),
+          matches: query === matching,
+        }) as MediaQueryList) as typeof window.matchMedia
+      return () => {
+        window.matchMedia = original
+      }
+    }
+
+    it('draws a waypoint big enough to hit with a finger on a touch device', () => {
+      const restore = stubPointer('(pointer: coarse)')
+      try {
+        render(<RouteLayer {...makeRoute({ waypoints: [w1] })} />)
+
+        const { radius } = circleMarkerProps.mock.calls.at(-1)![0]
+        // A tap lands anywhere within a finger's contact patch, so the target
+        // has to be far wider than the cursor hotspot a mouse aims with.
+        expect(radius).toBeGreaterThanOrEqual(10)
+      } finally {
+        restore()
+      }
+    })
+
+    it('draws the smaller waypoint when the pointer is a mouse', () => {
+      render(<RouteLayer {...makeRoute({ waypoints: [w1] })} />)
+
+      expect(circleMarkerProps.mock.calls.at(-1)![0].radius).toBe(6)
+    })
+
+  })
+
   describe('waypoint options (US-002)', () => {
     const w1 = { id: 'w1', lat: 40.4, lng: -3.7 }
     const w2 = { id: 'w2', lat: 40.41, lng: -3.71 }

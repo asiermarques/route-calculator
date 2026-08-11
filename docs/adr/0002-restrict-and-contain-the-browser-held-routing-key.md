@@ -1,6 +1,6 @@
 ---
 title: Restrict and contain the browser-held routing key
-status: Proposed
+status: Accepted
 date: 2026-08-11
 tags: [security, frontend]
 deciders: [Asier Marqués]
@@ -66,12 +66,16 @@ two provider modules). A `connect-src` naming only those origins means that
 script execution on the page is not by itself sufficient to exfiltrate the key.
 
 Supporting measures adopted with it: the key is never written to logs or error
-messages — the current provider errors report only the HTTP status, which is
-correct and should stay that way; the settings input masks the key and offers
-an explicit "forget key" action; and `localStorage` is preferred over
-`sessionStorage`, since the latter does not help against the main threat (an
-XSS occurs while the app is in use, when the key is available either way) and
-only helps on shared computers, which the forget action covers.
+messages — the current provider and geocoding errors report only which
+service failed and how, never the key or the full request URL that carries
+it, and `CLAUDE.md` §Prohibited patterns now states this as an invariant
+rather than a property of the current code. The credentials screen's input
+masks the key as it is typed. Storage does not enter into it at all:
+requisite 002 decided to persist nothing — not `localStorage`, not
+`sessionStorage` — so the key lives only in memory for the tab's session and
+a reload asks for it again; there is consequently no "remember me" and no
+"forget key" action to design, only the absence of storage this decision
+originally weighed `localStorage` against.
 
 Options rejected:
 
@@ -95,11 +99,19 @@ Options rejected:
   content is a supply-chain compromise of a dependency, so **"no third-party
   scripts" stops being a preference and becomes a security invariant** — adding
   an analytics snippet, a chat widget or a heatmap would put third-party code
-  on the origin holding the visitor's credential. `docs/ARCHITECTURE.md`
-  §Constraints currently treats the two routing providers as equivalent
-  ("Keys must be restricted by HTTP referrer/domain"); that requirement is
-  satisfiable for Mapbox and, as recorded below, not for OpenRouteService, so
-  the text overstates what the project can guarantee.
+  on the origin holding the visitor's credential. This is now recorded in
+  `CLAUDE.md` §Prohibited patterns, not only here. `docs/ARCHITECTURE.md`
+  §Constraints, which used to treat the two routing providers as equivalent
+  ("Keys must be restricted by HTTP referrer/domain"), has been corrected to
+  distinguish them, as recorded below.
+- **Accepted residual risks.** Two vectors execute inside the page's own
+  context and are not mitigable by a static app with no backend: a malicious
+  browser extension the visitor has installed, which can read page memory and
+  is not something a website's own CSP or code can defend against; and a
+  supply-chain compromise of one of the four runtime dependencies, which would
+  ship as first-party code and inherit whatever `connect-src` already allows.
+  Both are accepted rather than left implied, so neither the CSP nor the
+  provider restriction should be read as a stronger guarantee than they are.
 - **The two providers are not equivalent under this decision.**
   OpenRouteService documents no domain or referrer restriction mechanism: its
   API key authenticates as a plain bearer credential, passed either as an
@@ -111,27 +123,31 @@ Options rejected:
   repeatedly exceeding limits "may result in temporary blocking of your
   access", meaning an abuser can get the victim's account blocked. The primary
   control in this ADR simply does not exist for this provider.
-- **Follow-ups:**
-  - Decide and record Mapbox as the provider for any public BYOK deploy, given
-    the above. OpenRouteService remains fine for local or single-operator use,
-    where the key is not handed to strangers.
-  - Verify the CSP against a real `npm run build`. Vite may emit an inline
-    module-preload script, which `script-src 'self'` would block; resolve with
-    a hash or by disabling `build.modulePreload`.
-  - Decide whether the CSP ships as a `<meta http-equiv>` in `index.html`
-    (portable across static hosts) or as a response header (preferable where
-    the host allows it).
-  - Scrub the key from any future error-reporting integration: the Mapbox
-    request carries it in the query string
-    (`src/shared/routing/mapboxDirectionsProvider.ts:26`), so a naive
-    integration would capture it.
-  - Update `docs/ARCHITECTURE.md` §Constraints to distinguish the providers.
+- **Shipped by this decision's implementation** (`003-routing-key-exposure-hardening`):
+  the CSP verified against a real `npm run build` — Vite's module-preload
+  polyfill did trip `script-src 'self'` as anticipated, resolved by disabling
+  `build.modulePreload` rather than relaxing the policy
+  (`vite.config.ts`); the CSP shipped as a `<meta http-equiv>` in the built
+  `index.html` only, per ASM-001 (`src/shared/net/contentSecurityPolicy.ts`);
+  the credentials screen now states OpenRouteService's warning and Mapbox's
+  restriction steps concretely, replacing the generic "if it offers that"
+  sentence requisite 002's credentials screen shipped; and
+  `docs/ARCHITECTURE.md` §Constraints now distinguishes the two providers and
+  records the CSP.
+- **Still open:** deciding and recording which provider a public deploy should
+  recommend (OpenRouteService remains fine for local or single-operator use,
+  where the key is not handed to strangers) — a product decision, left to
+  whoever ships a public deploy rather than invented here. Scrubbing the key
+  from a future error-reporting integration remains relevant guidance for
+  whenever one is added; `CLAUDE.md` §Prohibited patterns now states the
+  invariant it would have to honour.
 
 ## Links
 
 - [ADR 0001](0001-user-supplied-routing-api-key-in-browser-storage.md) — the
   decision that creates this exposure.
-- `docs/ARCHITECTURE.md` §Constraints — the current, provider-agnostic wording.
+- `docs/ARCHITECTURE.md` §Constraints — distinguishes the two providers and
+  records the Content-Security-Policy this decision resulted in.
 - [Mapbox access tokens](https://docs.mapbox.com/api/accounts/tokens/) —
   `pk.`/`sk.` token types and the `allowedUrls` restriction.
 - [OpenRouteService terms of service](https://openrouteservice.org/terms-of-service)

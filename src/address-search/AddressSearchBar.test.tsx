@@ -50,6 +50,21 @@ describe('AddressSearchBar', () => {
     expect(setView).not.toHaveBeenCalled()
   })
 
+  it('shows only the fixed error message, never the rejection reason, however it fails (003 US-005, BR-001)', async () => {
+    geocodeAddress.mockRejectedValue(
+      new Error('Nominatim request failed: https://nominatim.openstreetmap.org/search?q=secret-address'),
+    )
+    const user = userEvent.setup()
+    render(<AddressSearchBar />)
+
+    await user.type(screen.getByRole('textbox', { name: /address/i }), 'Puerta del Sol')
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).not.toHaveTextContent(/secret-address/)
+    expect(alert).not.toHaveTextContent(/nominatim\.openstreetmap\.org/)
+  })
+
   it('never geocodes per keystroke while the user is typing', async () => {
     const user = userEvent.setup()
     render(<AddressSearchBar />)

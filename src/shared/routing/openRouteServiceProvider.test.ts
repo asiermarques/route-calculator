@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { OpenRouteServiceProvider } from './openRouteServiceProvider'
+import { rejectionOf } from '../../test/rejectionOf'
 
 const FROM = { lat: 40.4168, lng: -3.7038 }
 const TO = { lat: 40.42, lng: -3.7 }
@@ -111,5 +112,53 @@ describe('OpenRouteServiceProvider', () => {
     await provider.getRoute(FROM, TO)
 
     expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
+  })
+
+  // The key travels in an Authorization header here rather than the query
+  // string, but BR-001 makes no exception for that — nothing built from the
+  // request should carry it regardless (003 US-005).
+  it('never puts the API key in the error it throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 401 })))
+    const provider = new OpenRouteServiceProvider('test-key')
+
+    const error = await rejectionOf(provider.getRoute(FROM, TO))
+
+    expect(error.message).not.toContain('test-key')
+    expect(error.message).not.toContain('api.openrouteservice.org')
+  })
+
+  it('never leaks the API key or the request URL when the request times out', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_input: unknown, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+          }),
+      ),
+    )
+    const provider = new OpenRouteServiceProvider('test-key')
+
+    const rejection = rejectionOf(provider.getRoute(FROM, TO))
+    await vi.advanceTimersByTimeAsync(10_000)
+    const error = await rejection
+
+    expect(error.message).not.toContain('test-key')
+    expect(error.message).not.toContain('api.openrouteservice.org')
+    vi.useRealTimers()
+  })
+
+  it('never leaks the API key or the request URL when the response is malformed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ features: [{}] }), { status: 200 })),
+    )
+    const provider = new OpenRouteServiceProvider('test-key')
+
+    const error = await rejectionOf(provider.getRoute(FROM, TO))
+
+    expect(error.message).not.toContain('test-key')
+    expect(error.message).not.toContain('api.openrouteservice.org')
   })
 })

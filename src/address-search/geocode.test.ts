@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { geocodeAddress } from './geocode'
+import { rejectionOf } from '../test/rejectionOf'
 
 describe('geocodeAddress', () => {
   afterEach(() => {
@@ -76,5 +77,50 @@ describe('geocodeAddress', () => {
     await geocodeAddress('anywhere')
 
     expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
+  })
+
+  // Nominatim carries no credential, but FR-003 still applies to the full
+  // request URL — which, unlike the other two providers, also carries the
+  // visitor's typed search text (003 US-005).
+  it('never puts the request URL in the error it throws for an error status', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 503 })))
+
+    const error = await rejectionOf(geocodeAddress('a private address'))
+
+    expect(error.message).not.toContain('nominatim.openstreetmap.org')
+    expect(error.message).not.toContain('a private address')
+  })
+
+  it('never leaks the request URL when the request times out', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_input: unknown, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+          }),
+      ),
+    )
+
+    const rejection = rejectionOf(geocodeAddress('a private address'))
+    await vi.advanceTimersByTimeAsync(10_000)
+    const error = await rejection
+
+    expect(error.message).not.toContain('nominatim.openstreetmap.org')
+    expect(error.message).not.toContain('a private address')
+    vi.useRealTimers()
+  })
+
+  it('never leaks the request URL when the response is malformed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify([{ lat: 'not-a-number' }]), { status: 200 })),
+    )
+
+    const error = await rejectionOf(geocodeAddress('a private address'))
+
+    expect(error.message).not.toContain('nominatim.openstreetmap.org')
+    expect(error.message).not.toContain('a private address')
   })
 })

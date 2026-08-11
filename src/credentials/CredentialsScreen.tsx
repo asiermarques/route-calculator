@@ -34,6 +34,10 @@ export function CredentialsScreen({ onSubmit, initialProvider, onDismiss }: Cred
   const info = PROVIDER_INFO[provider]
   const trimmedKey = apiKey.trim()
   const isKeyMissing = touched && trimmedKey === ''
+  // The domain a Mapbox visitor restricts their token to is this
+  // deployment's own — showing it beats telling them to work it out (003
+  // US-004).
+  const domain = window.location.origin
 
   function handleProviderChange(next: ProviderName) {
     setProvider(next)
@@ -89,7 +93,14 @@ export function CredentialsScreen({ onSubmit, initialProvider, onDismiss }: Cred
             .
           </p>
           <p>{info.freeTierNote}</p>
+          {info.restrictionStep && <p>3. {info.restrictionStep(domain)}</p>}
         </section>
+
+        {info.unrestrictableWarning && (
+          <p className={styles.warning} role="note">
+            {info.unrestrictableWarning}
+          </p>
+        )}
 
         <label className={styles.field}>
           <span>API key</span>
@@ -113,8 +124,7 @@ export function CredentialsScreen({ onSubmit, initialProvider, onDismiss }: Cred
           Your key stays in this browser tab. It is sent only to {info.label} —
           never to this app&rsquo;s own server — and is not written to storage
           anywhere, so there is no &ldquo;remember me&rdquo;: reloading this page
-          will ask again. Restrict your key to this app&rsquo;s domain from{' '}
-          {info.label}&rsquo;s dashboard, if it offers that.
+          will ask again.
         </p>
 
         <div className={styles.actions}>

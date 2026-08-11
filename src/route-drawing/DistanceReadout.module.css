@@ -5,7 +5,13 @@
   /* The width the address search bar is told to stop short of, so the two
    * top corners cannot grow into each other. */
   max-width: var(--size-readout-column);
+  /* The height of one control row, which is what the "change routing
+   * provider" button below is offset by to stack under this — text alone
+   * would leave that offset guessing at this panel's height. */
+  min-height: var(--size-control-row);
   z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
   background: var(--color-surface);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-lg);

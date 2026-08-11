@@ -48,6 +48,42 @@ may import from `src/shared/`; slices do not import from each other.
 Any UI work follows `docs/DESIGN.md` once it exists. No raw colour/utility
 values outside tokens.
 
+## Mobile first
+
+A phone is the target this UI is designed against, not a size it is checked at
+afterwards. This app makes that easy to get wrong: the map fills the viewport
+and every control floats on top of it absolutely positioned, so a small screen
+produces no reflow, no overflow warning and no error — controls simply become
+too small to hit, or drift past an edge no scrollbar reaches. Nothing tells you
+except looking.
+
+So for any new or changed UI:
+
+- **Design the phone layout first**, then let it widen. A layout worked out at
+  desktop width and then squeezed is how controls end up overlapping and panels
+  end up unreachable.
+- **Every interactive control gets `min-height: var(--size-control-row)`**
+  (44px) — buttons, text fields, selects. `input` and `select` also take
+  `--font-ui-field` (16px), which is what stops mobile Safari zooming the page
+  in on focus and never zooming back out.
+- **Any panel that can outgrow the viewport must scroll to both ends.** Centre
+  it with `margin: auto` on the panel, never with `align-items`/
+  `justify-content` on the scroller — a centred flex item overflows the start
+  edge too, and that half cannot be scrolled to.
+- **Touch has no hover and no cursor.** Anything the cursor communicates needs
+  a second, visible carrier on touch (the marked waypoint is the existing
+  example). Sizes Leaflet takes as numbers rather than CSS — marker radii —
+  come from `useCoarsePointer`, not a constant.
+- **Cover it in `e2e/mobile.spec.ts`**, which runs at phone viewports with
+  `hasTouch`/`isMobile` on, and add the control to the touch-target sweep
+  there. `e2e/overlay-layout.spec.ts` separately asserts that no two overlays
+  cover each other at phone, tablet and desktop widths — a new overlay belongs
+  in its list. Unit tests cannot catch any of this: jsdom has no layout.
+- Read `docs/DESIGN.md` "Rules" before changing a size or an offset. The
+  corner-stacking offsets are computed from `--size-control-row`, so changing
+  a control's height without going through that token silently breaks the
+  spacing of whatever sits above it.
+
 ## Configuration
 
 The routing provider and its API key are supplied by the visitor at runtime,
@@ -68,3 +104,16 @@ runs in.
   keep it in `src/shared/`, not duplicated per slice.
 - No `TODO` placeholders for in-scope work.
 - No feature flags or "for later" parameters.
+- **No third-party script loaded into the app's origin** — no analytics, chat
+  widget, heatmap, embedded player, or similar — for as long as the app
+  handles a visitor's routing API key. This is a security invariant, not a
+  style preference: the production Content-Security-Policy
+  (`src/shared/net/contentSecurityPolicy.ts`) is what stands between script
+  running on this origin and a visitor's key leaving it, and third-party code
+  on the origin is the realistic way that policy gets defeated from the
+  inside. See `docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`.
+- **No API key written to `console`, to an error message, or to any
+  telemetry/error-reporting destination** — the current provider and geocoding
+  errors report only what service failed and how (never the key or the full
+  request URL), and any future error-reporting integration must preserve that
+  rather than capture the raw request (`docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`).

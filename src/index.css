@@ -7,6 +7,18 @@
   color-scheme: light;
 }
 
+/* Sizes include padding and border. Overlay controls are given an explicit
+ * minimum height — the touch-target size, which is also the row height the
+ * corner-stacking offsets are built from (`--size-control-row`) — and under
+ * the default `content-box` that height would be the *text* box, leaving each
+ * control a padding taller than the number it was given and every offset
+ * computed from it short by the same amount. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body,
 #root {

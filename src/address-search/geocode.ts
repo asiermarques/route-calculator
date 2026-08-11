@@ -1,12 +1,13 @@
 import { fetchWithTimeout } from '../shared/http/fetchWithTimeout'
 import { requireFiniteNumber } from '../shared/http/parse'
+import { NOMINATIM_ORIGIN } from '../shared/net/outboundOrigins'
 
 export type GeocodeMatch = {
   lat: number
   lon: number
 }
 
-const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search'
+const NOMINATIM_SEARCH_URL = `${NOMINATIM_ORIGIN}/search`
 
 /** Geocodes a free-text address via Nominatim and resolves with its best
  * match, or `null` when nothing matches (EDGE-003, BR-001). Throws when the

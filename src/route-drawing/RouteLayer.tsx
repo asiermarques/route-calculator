@@ -7,6 +7,7 @@ import type { LatLng } from '../shared/routing/types'
 import { useDisableMapClickPropagation } from '../shared/map/useDisableMapClickPropagation'
 import { WaypointOptionsPanel } from './WaypointOptionsPanel'
 import { panelPlacement } from './panelPlacement'
+import { useCoarsePointer } from './useCoarsePointer'
 import styles from './RouteLayer.module.css'
 
 type RouteLayerProps = {
@@ -25,7 +26,25 @@ type RouteLayerProps = {
 type EditState = { selected: string | null; armed: string | null }
 const NO_EDIT: EditState = { selected: null, armed: null }
 
-const WAYPOINT_RADIUS = 6
+/** Marker radius in pixels, by how precisely the visitor can point. A finger
+ * covers far more of the screen than a cursor hotspot does, and a Leaflet
+ * vector marker is hit-tested against exactly the shape it draws — so at the
+ * fine-pointer size a waypoint is a 12px target, which on a phone is most of
+ * the way to unhittable. The touch size is the dot itself, not an invisible
+ * halo around it: a bigger dot is also easier to *see* on a small screen, and
+ * a marker whose hit area is larger than it looks would swallow taps meant
+ * for the map next to it. */
+const WAYPOINT_RADIUS_FINE = 6
+const WAYPOINT_RADIUS_COARSE = 11
+// The drawn route answers no clicks of its own — a tap on it means the same
+// thing as a tap on the map underneath. Saying so explicitly matters on touch:
+// as an interactive layer the line is a large tap target lying directly under
+// every waypoint, and a tap meant for a marker gets resolved to the line
+// instead, which then bubbles to the map and appends a waypoint rather than
+// opening the options for the one that was aimed at. A mouse never sees this
+// — its hit test is a single point, and the marker is painted above the line
+// — so the failure is touch-only. `bringToBack()` below fixes the paint order
+// but not this, since the line stays hit-testable wherever it is drawn.
 const PATH_OPTIONS = { color: 'var(--color-route)', weight: 4 }
 const WAYPOINT_OPTIONS = {
   color: 'var(--color-waypoint)',
@@ -43,6 +62,7 @@ const WAYPOINT_OPTIONS_EDITING = {
 
 type WaypointMarkerProps = {
   waypoint: Waypoint
+  radius: number
   isEditing: boolean
   onClick: (waypoint: Waypoint) => void
 }
@@ -54,7 +74,12 @@ type WaypointMarkerProps = {
  * an edit doesn't touch (`useRoute`'s `filter`/`map` preserve unaffected
  * entries), and `onClick` is stable regardless of which waypoint is being
  * edited (see `handleMarkerClick` below). */
-const WaypointMarker = memo(function WaypointMarker({ waypoint, isEditing, onClick }: WaypointMarkerProps) {
+const WaypointMarker = memo(function WaypointMarker({
+  waypoint,
+  radius,
+  isEditing,
+  onClick,
+}: WaypointMarkerProps) {
   const center = useMemo((): [number, number] => [waypoint.lat, waypoint.lng], [waypoint.lat, waypoint.lng])
   const eventHandlers = useMemo(
     () => ({
@@ -72,7 +97,7 @@ const WaypointMarker = memo(function WaypointMarker({ waypoint, isEditing, onCli
   return (
     <CircleMarker
       center={center}
-      radius={WAYPOINT_RADIUS}
+      radius={radius}
       pathOptions={isEditing ? WAYPOINT_OPTIONS_EDITING : WAYPOINT_OPTIONS}
       eventHandlers={eventHandlers}
     />
@@ -97,6 +122,7 @@ export function RouteLayer({
   const map = useMap()
   const statusRef = useDisableMapClickPropagation<HTMLDivElement>()
   const [editState, setEditState] = useState<EditState>(NO_EDIT)
+  const waypointRadius = useCoarsePointer() ? WAYPOINT_RADIUS_COARSE : WAYPOINT_RADIUS_FINE
 
   // A waypoint can disappear out from under an open panel or an armed move —
   // cleared, undone, or deleted (EDGE-005) — so validity is derived from the
@@ -226,12 +252,21 @@ export function RouteLayer({
   return (
     <>
       {hasPolyline && (
-        <Polyline ref={polylineRef} positions={positions} pathOptions={PATH_OPTIONS} />
+        <Polyline
+          ref={polylineRef}
+          positions={positions}
+          pathOptions={PATH_OPTIONS}
+          // A layer-construction option, not a style: `pathOptions` is applied
+          // with Leaflet's `setStyle`, which cannot make an already-interactive
+          // layer inert, so this has to be its own prop to take effect at all.
+          interactive={false}
+        />
       )}
       {waypoints.map((waypoint) => (
         <WaypointMarker
           key={waypoint.id}
           waypoint={waypoint}
+          radius={waypointRadius}
           isEditing={waypoint.id === selected || waypoint.id === armed}
           onClick={handleMarkerClick}
         />
@@ -241,6 +276,7 @@ export function RouteLayer({
           style={panelPlacement(
             map.latLngToContainerPoint([selectedWaypoint.lat, selectedWaypoint.lng]),
             map.getSize(),
+            waypointRadius,
           )}
           onDelete={() => handleDelete(selectedWaypoint.id)}
           onMove={() => handleChooseMove(selectedWaypoint.id)}

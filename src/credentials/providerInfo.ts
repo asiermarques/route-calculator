@@ -11,6 +11,16 @@ export type ProviderInfo = {
   credentialKind: string
   /** Free-tier reassurance for a first-time visitor (FR-008). */
   freeTierNote: string
+  /** What a leak costs, shown before the key field — present only for a
+   * provider whose key cannot be restricted to this app's domain at all
+   * (003 US-003). Absent for a provider that does support restriction; the
+   * two fields are mutually exclusive. */
+  unrestrictableWarning?: string
+  /** An extra instruction appended after the key-generation steps, naming
+   * this deployment's own domain (the `string` argument, its runtime
+   * origin) and where in the provider's dashboard to restrict the key to it
+   * — present only for a provider that supports restriction (003 US-004). */
+  restrictionStep?: (domain: string) => string
 }
 
 /** Per-provider guidance for the credentials screen (US-003). The screen
@@ -24,6 +34,10 @@ export const PROVIDER_INFO: Record<ProviderName, ProviderInfo> = {
     keyPageUrl: 'https://account.mapbox.com/access-tokens/',
     credentialKind: 'your default public token (starts with "pk.") — not a secret ("sk.") token',
     freeTierNote: "Mapbox's free tier is enough for personal use.",
+    restrictionStep: (domain) =>
+      `Restrict it to this app's domain — ${domain} — from the same account.mapbox.com page: open the ` +
+      `token, and under "Token restrictions" add ${domain} to its URL restrictions. A token stolen from ` +
+      'this page is then worthless anywhere else.',
   },
   openrouteservice: {
     label: 'OpenRouteService',
@@ -31,5 +45,9 @@ export const PROVIDER_INFO: Record<ProviderName, ProviderInfo> = {
     keyPageUrl: 'https://openrouteservice.org/dev/#/home',
     credentialKind: 'the API key shown on your account dashboard',
     freeTierNote: "OpenRouteService's free tier is enough for personal use.",
+    unrestrictableWarning:
+      "This key cannot be restricted to this app's domain — OpenRouteService offers no domain or " +
+      'referrer restriction, so a leaked key is usable from anywhere. OpenRouteService also allows only ' +
+      'one account per person, so repeated abuse of a leaked key can get your only account blocked.',
   },
 }

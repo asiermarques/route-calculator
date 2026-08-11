@@ -156,4 +156,50 @@ describe('CredentialsScreen', () => {
 
     expect(onSubmit).toHaveBeenCalledWith('openrouteservice', 'a-working-key')
   })
+
+  it('warns, before the key is typed, that an OpenRouteService key cannot be restricted and what a leak costs (003 US-003)', () => {
+    render(<CredentialsScreen onSubmit={vi.fn()} initialProvider="openrouteservice" />)
+
+    expect(screen.getByText(/cannot be restricted/i)).toBeInTheDocument()
+    expect(screen.getByText(/usable from anywhere/i)).toBeInTheDocument()
+    expect(screen.getByText(/blocked/i)).toBeInTheDocument()
+  })
+
+  it('accepts an OpenRouteService key and behaves as usual despite the warning (003 US-003 AC3)', async () => {
+    const onSubmit = vi.fn()
+    const user = userEvent.setup()
+    render(<CredentialsScreen onSubmit={onSubmit} initialProvider="openrouteservice" />)
+
+    await user.type(screen.getByLabelText(/api key/i), 'a-real-key')
+    await user.click(screen.getByRole('button', { name: /continue/i }))
+
+    expect(onSubmit).toHaveBeenCalledWith('openrouteservice', 'a-real-key')
+  })
+
+  it('drops the OpenRouteService warning when Mapbox is selected instead (003 US-003 AC2)', async () => {
+    const user = userEvent.setup()
+    render(<CredentialsScreen onSubmit={vi.fn()} initialProvider="openrouteservice" />)
+    expect(screen.getByText(/cannot be restricted/i)).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /routing provider/i }), 'mapbox')
+
+    expect(screen.queryByText(/cannot be restricted/i)).not.toBeInTheDocument()
+  })
+
+  it('tells a Mapbox visitor to set URL restrictions to this app\'s own domain (003 US-004)', () => {
+    render(<CredentialsScreen onSubmit={vi.fn()} initialProvider="mapbox" />)
+
+    expect(screen.getByText(/url restriction/i)).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(window.location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument()
+  })
+
+  it('drops the Mapbox restriction step when OpenRouteService is selected instead (003 US-004 AC3)', async () => {
+    const user = userEvent.setup()
+    render(<CredentialsScreen onSubmit={vi.fn()} initialProvider="mapbox" />)
+    expect(screen.getByText(/url restriction/i)).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /routing provider/i }), 'openrouteservice')
+
+    expect(screen.queryByText(/url restriction/i)).not.toBeInTheDocument()
+  })
 })

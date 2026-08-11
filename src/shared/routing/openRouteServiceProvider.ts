@@ -1,8 +1,9 @@
 import { fetchWithTimeout } from '../http/fetchWithTimeout'
 import { requireFiniteNumber, requirePath } from '../http/parse'
+import { OPENROUTESERVICE_ORIGIN } from '../net/outboundOrigins'
 import type { LatLng, RouteSegment, RoutingProvider } from './types'
 
-const DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions'
+const DIRECTIONS_URL = `${OPENROUTESERVICE_ORIGIN}/v2/directions`
 // A single default profile for all routes (ASM-002) — the product doesn't
 // distinguish activities, and foot-walking suits both running and walking.
 const PROFILE = 'foot-walking'

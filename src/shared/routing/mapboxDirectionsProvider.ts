@@ -1,8 +1,9 @@
 import { fetchWithTimeout } from '../http/fetchWithTimeout'
 import { requireFiniteNumber, requirePath } from '../http/parse'
+import { MAPBOX_ORIGIN } from '../net/outboundOrigins'
 import type { LatLng, RouteSegment, RoutingProvider } from './types'
 
-const DIRECTIONS_URL = 'https://api.mapbox.com/directions/v5/mapbox'
+const DIRECTIONS_URL = `${MAPBOX_ORIGIN}/directions/v5/mapbox`
 // A single default profile for all routes (ASM-002) — the product doesn't
 // distinguish activities, and walking suits both running and walking.
 const PROFILE = 'walking'

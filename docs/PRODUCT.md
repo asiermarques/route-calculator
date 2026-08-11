@@ -48,7 +48,13 @@ tracking.
 - On a public deploy, a screen for the visitor's own routing-provider choice
   and API key — not stored, not sent anywhere but that provider — asked once
   per visit and reachable again at any time from within the app, to correct
-  a mistyped key or a wrong provider without losing the drawn route.
+  a mistyped key or a wrong provider without losing the drawn route. The
+  screen tells the visitor what a leaked key would cost for the provider
+  they picked before they type it in: OpenRouteService's key cannot be tied
+  to this app's domain at all, so a leak is usable from anywhere and repeated
+  abuse can get their only account blocked; Mapbox's can, and the screen says
+  how (`003-routing-key-exposure-hardening`,
+  `docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`).
 
 ## Explicit non-goals
 

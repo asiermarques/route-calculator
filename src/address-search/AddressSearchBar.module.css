@@ -2,9 +2,14 @@
   position: absolute;
   top: var(--space-lg);
   left: var(--space-lg);
-  /* Stops short of the distance readout in the opposite corner: unbounded,
-   * the bar reaches under it at phone widths and buries the submit button. */
-  max-width: calc(100% - var(--space-lg) * 3 - var(--size-readout-column));
+  /* An explicit width, not just a `max-width`: absolutely positioned, this bar
+   * sizes to fit its contents, and a wrapping flex container's fit-content
+   * width is its widest *item* rather than the sum of a row — so the bar came
+   * out only as wide as the text field and pushed the submit button onto a
+   * second line at every viewport size. The second value stops the bar short
+   * of the distance readout in the opposite corner, which it would otherwise
+   * reach under at phone widths. */
+  width: min(24rem, calc(100% - var(--space-lg) * 3 - var(--size-readout-column)));
   z-index: var(--z-overlay);
   display: flex;
   flex-wrap: wrap;
@@ -19,8 +24,12 @@
 }
 
 .input {
-  flex: 1 1 10rem;
+  /* Basis 0, not the field's own intrinsic width: at phone widths the bar has
+   * only just enough room for field and button side by side, and a field that
+   * refuses to shrink below its content width sends the button to a new line. */
+  flex: 1 1 0;
   min-width: 0;
+  min-height: var(--size-control-row);
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -28,14 +37,17 @@
    * the panel around it stays on the light palette. */
   background: var(--color-surface);
   color: var(--color-text);
+  font: var(--font-ui-field);
 }
 
 .button {
+  min-height: var(--size-control-row);
   padding: var(--space-xs) var(--space-md);
   border: none;
   border-radius: var(--radius);
   background: var(--color-accent);
   color: var(--color-accent-text);
+  font: var(--font-ui);
   cursor: pointer;
 }
 

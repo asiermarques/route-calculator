@@ -199,6 +199,69 @@ test('dismissing the reopened screen without changing anything leaves the curren
   await expect(page.getByText('0.8 km')).toBeVisible()
 })
 
+/** Provider-specific security guidance (003 US-003, US-004): a visitor
+ * choosing a provider learns whether the key they're about to paste can be
+ * protected, and how. */
+
+test('OpenRouteService is warned, before the key is typed, that its key cannot be restricted and what a leak costs (003 US-003)', async ({
+  page,
+}) => {
+  await mockTiles(page)
+  await page.goto('/')
+
+  await page.getByRole('combobox', { name: /routing provider/i }).selectOption('openrouteservice')
+
+  await expect(page.getByText(/cannot be restricted/i)).toBeVisible()
+  await expect(page.getByText(/usable from anywhere/i)).toBeVisible()
+  await expect(page.getByText(/blocked/i)).toBeVisible()
+})
+
+test('switching away from OpenRouteService drops its warning (003 US-003 AC2)', async ({ page }) => {
+  await mockTiles(page)
+  await page.goto('/')
+
+  await page.getByRole('combobox', { name: /routing provider/i }).selectOption('openrouteservice')
+  await expect(page.getByText(/cannot be restricted/i)).toBeVisible()
+
+  await page.getByRole('combobox', { name: /routing provider/i }).selectOption('mapbox')
+  await expect(page.getByText(/cannot be restricted/i)).toHaveCount(0)
+})
+
+test('an OpenRouteService key is still accepted despite the warning (003 US-003 AC3)', async ({ page }) => {
+  await mockTiles(page)
+  await mockRouting(page, [{ distanceMeters: 1000 }])
+  await page.goto('/')
+  await supplyCredentials(page, 'openrouteservice')
+
+  await expect(page.locator('.leaflet-container')).toBeVisible()
+})
+
+test('Mapbox is told to restrict its token\'s allowed URLs to this app\'s own domain, and where (003 US-004)', async ({
+  page,
+}) => {
+  await mockTiles(page)
+  await page.goto('/')
+
+  await page.getByRole('combobox', { name: /routing provider/i }).selectOption('mapbox')
+
+  const restrictionStep = page.getByText(/url restriction/i)
+  await expect(restrictionStep).toBeVisible()
+  await expect(restrictionStep).toContainText('account.mapbox.com')
+  const origin = await page.evaluate(() => window.location.origin)
+  await expect(restrictionStep).toContainText(origin)
+})
+
+test('switching away from Mapbox drops its restriction step (003 US-004 AC3)', async ({ page }) => {
+  await mockTiles(page)
+  await page.goto('/')
+
+  await page.getByRole('combobox', { name: /routing provider/i }).selectOption('mapbox')
+  await expect(page.getByText(/url restriction/i)).toBeVisible()
+
+  await page.getByRole('combobox', { name: /routing provider/i }).selectOption('openrouteservice')
+  await expect(page.getByText(/url restriction/i)).toHaveCount(0)
+})
+
 test('switching provider on the reopened screen clears the key field (BR-004, US-005)', async ({ page }) => {
   await mockTiles(page)
   await page.goto('/')

@@ -107,6 +107,22 @@ describe('useRoute', () => {
     expect(result.current.distanceMeters).toBe(0)
   })
 
+  it('shows only the fixed error message, never the rejection reason, however routing fails (003 US-005, BR-001)', async () => {
+    const getRoute = vi
+      .fn()
+      .mockRejectedValue(
+        new Error('OpenRouteService request failed: Authorization: secret-api-key api.openrouteservice.org'),
+      )
+    const { result } = renderHook(() => useRoute({ getRoute }))
+
+    act(() => result.current.addWaypoint(A))
+    act(() => result.current.addWaypoint(B))
+
+    await waitFor(() => expect(result.current.error).not.toBeNull())
+    expect(result.current.error).not.toContain('secret-api-key')
+    expect(result.current.error).not.toContain('api.openrouteservice.org')
+  })
+
   it('shows an error and leaves the route unchanged when the provider is unreachable', async () => {
     const getRoute = vi
       .fn()

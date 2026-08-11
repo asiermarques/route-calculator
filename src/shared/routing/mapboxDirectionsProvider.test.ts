@@ -111,4 +111,42 @@ describe('MapboxDirectionsProvider', () => {
     expect(error.message).not.toContain('test-token')
     expect(error.message).not.toContain('api.mapbox.com')
   })
+
+  // The access token travels in the query string here (unlike
+  // OpenRouteService's header), so a message built from the request URL
+  // would leak it on this path specifically (003 US-005).
+  it('never leaks the access token or the request URL when the request times out', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_input: unknown, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+          }),
+      ),
+    )
+    const provider = new MapboxDirectionsProvider('test-token')
+
+    const rejection = rejectionOf(provider.getRoute(FROM, TO))
+    await vi.advanceTimersByTimeAsync(10_000)
+    const error = await rejection
+
+    expect(error.message).not.toContain('test-token')
+    expect(error.message).not.toContain('api.mapbox.com')
+    vi.useRealTimers()
+  })
+
+  it('never leaks the access token or the request URL when the response is malformed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ routes: [{}] }), { status: 200 })),
+    )
+    const provider = new MapboxDirectionsProvider('test-token')
+
+    const error = await rejectionOf(provider.getRoute(FROM, TO))
+
+    expect(error.message).not.toContain('test-token')
+    expect(error.message).not.toContain('api.mapbox.com')
+  })
 })

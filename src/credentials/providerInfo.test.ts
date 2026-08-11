@@ -23,4 +23,30 @@ describe('PROVIDER_INFO', () => {
     expect(PROVIDER_INFO.openrouteservice.credentialKind).toMatch(/api key/i)
     expect(PROVIDER_INFO.openrouteservice.credentialKind).toMatch(/dashboard/i)
   })
+
+  it('warns that an OpenRouteService key cannot be restricted, what a leak costs, and that it is the only account (003 US-003)', () => {
+    const warning = PROVIDER_INFO.openrouteservice.unrestrictableWarning
+    expect(warning).toBeDefined()
+    expect(warning).toMatch(/cannot be restricted/i)
+    expect(warning).toMatch(/anywhere/i)
+    expect(warning).toMatch(/only.*account|one account/i)
+    expect(warning).toMatch(/blocked/i)
+  })
+
+  it('gives Mapbox no unrestrictable warning, since its key can be restricted (003 US-003)', () => {
+    expect(PROVIDER_INFO.mapbox.unrestrictableWarning).toBeUndefined()
+  })
+
+  it('gives Mapbox a restriction step naming this deployment\'s own domain (003 US-004)', () => {
+    const step = PROVIDER_INFO.mapbox.restrictionStep
+    expect(step).toBeDefined()
+    const text = step!('https://example.test')
+    expect(text).toContain('https://example.test')
+    expect(text).toMatch(/url restriction/i)
+    expect(text).toMatch(/dashboard|account\.mapbox\.com/i)
+  })
+
+  it('gives OpenRouteService no restriction step, since its key cannot be restricted (003 US-004)', () => {
+    expect(PROVIDER_INFO.openrouteservice.restrictionStep).toBeUndefined()
+  })
 })
