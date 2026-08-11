@@ -55,9 +55,9 @@ const PHONE_VIEWPORTS = [
   { name: 'phone, landscape', width: 740, height: 360 },
 ]
 
-/** Every control the app itself draws, once the map is up. Leaflet's own zoom
- * buttons are deliberately absent: their size is Leaflet's to set, and this
- * suite doesn't restyle third-party controls. */
+/** Every control the app itself draws, once the map is up — which now includes
+ * zooming: those buttons are the app's own (`shared/map/ZoomControls`), not
+ * Leaflet's 30px pair, so they are held to the same touch target as the rest. */
 function appControls(page: Page) {
   return [
     page.getByRole('textbox', { name: /address/i }),
@@ -66,6 +66,8 @@ function appControls(page: Page) {
     page.getByRole('button', { name: /remove last waypoint/i }),
     page.getByRole('button', { name: /^clear$/i }),
     page.getByRole('button', { name: /change routing provider/i }),
+    page.getByRole('button', { name: /zoom in/i }),
+    page.getByRole('button', { name: /zoom out/i }),
   ]
 }
 

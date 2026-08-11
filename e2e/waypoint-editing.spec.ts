@@ -476,10 +476,14 @@ test.describe('overlapping waypoints resolve to exactly one (EDGE-002)', () => {
     const x = box.x + box.width * 0.5
     const y = box.y + box.height * 0.5
     await page.mouse.click(x, y)
-    // A few pixels off — outside the first marker's own small hit radius (so
-    // this still places a second waypoint rather than opening the first
-    // one's options) but close enough that the two markers render overlapping.
-    await page.mouse.click(x + 8, y)
+    // A few pixels off — outside the first marker's own hit radius (so this
+    // still places a second waypoint rather than opening the first one's
+    // options) but inside its drawn diameter, so the two render overlapping.
+    // Both bounds come from `WAYPOINT_RADIUS_FINE` in `RouteLayer.tsx`: a
+    // mouse-sized waypoint is hit-tested out to its radius plus half its
+    // stroke, and two of them overlap while they are less than a diameter
+    // apart. This offset has to move if that radius does.
+    await page.mouse.click(x + 11, y)
     await expect(waypointMarkers(page)).toHaveCount(2)
 
     await page.mouse.click(x, y)

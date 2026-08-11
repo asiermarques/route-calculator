@@ -2,21 +2,42 @@
   position: absolute;
   z-index: var(--z-overlay);
   display: flex;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
   background: var(--color-surface);
-  padding: var(--space-sm);
+  padding: var(--space-xs);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 4px var(--color-shadow);
+  box-shadow: var(--shadow-panel);
 }
 
 .button {
   min-height: var(--size-control-row);
-  padding: var(--space-xs) var(--space-md);
-  border: 1px solid var(--color-border);
+  padding: 0 var(--space-md);
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   color: var(--color-text);
-  font: var(--font-ui);
+  font: var(--font-action);
+  letter-spacing: var(--tracking-action);
+  text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.button:hover {
+  border-color: var(--color-border-strong);
+}
+
+/* Deleting a waypoint cannot be undone (BR-006), so it is the one control in
+ * the app that carries the warm signal colour — the same one the waypoint
+ * itself is wearing while this panel is open. */
+.destructive {
+  color: var(--color-error);
+}
+
+.destructive:hover {
+  border-color: var(--color-error);
 }

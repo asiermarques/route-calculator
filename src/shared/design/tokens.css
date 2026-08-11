@@ -1,40 +1,124 @@
 /* Design tokens — see docs/DESIGN.md. Loaded once globally; component CSS
- * modules reference these instead of raw values. */
+ * modules reference these instead of raw values.
+ *
+ * The app is one instrument on top of a map: the map is the only bright
+ * surface, every control is a dark panel floating over it, and a single
+ * high-visibility accent — the colour of a race bib, a track marking, a
+ * running shoe — belongs to the route and to the one number the app exists to
+ * produce. Contrast is what makes that work: a light panel over light map
+ * tiles has no edge, a dark one always does. */
 :root {
-  --color-surface: #ffffff;
-  --color-text: #1a1a1a;
-  --color-border: #cccccc;
-  --color-accent: #1a73e8;
-  --color-accent-text: #ffffff;
-  --color-error: #b3261e;
-  --color-focus: #0b57d0;
-  --color-shadow: rgba(0, 0, 0, 0.3);
-  --color-route: #1a73e8;
-  --color-waypoint: #d93025;
-  --color-waypoint-selected: #f9ab00;
+  /* --- Surfaces -------------------------------------------------------- */
+  /* The panel colour, near-black with a green cast so it sits in the same
+   * family as the accent rather than reading as neutral grey. */
+  --color-surface: #0b0f0e;
+  /* One step up, for a control *inside* a panel (a field, a hovered button):
+   * on this palette a raised element is lighter, never lower-contrast. */
+  --color-surface-raised: #181f1c;
+  /* Behind everything, on the one screen that has no map under it yet. */
+  --color-void: #050807;
+  --color-text: #f1f5ef;
+  /* Secondary prose and micro-labels. 6.7:1 on --color-surface — dimmed, but
+   * never below the contrast body text needs. */
+  --color-text-muted: #9aa79d;
+  /* Borders on a dark panel are light-on-dark hairlines, not a grey line: a
+   * solid mid-grey border reads as heavier than the panel it encloses. */
+  --color-border: rgba(215, 255, 60, 0.16);
+  --color-border-strong: rgba(215, 255, 60, 0.34);
 
+  /* --- Accent ---------------------------------------------------------- */
+  /* Hi-vis "volt". One accent, spent on exactly three things: the route, the
+   * distance unit, and the primary action. Anything else stays monochrome. */
+  --color-accent: #d7ff3c;
+  /* Hover on a control already filled with the accent — brighter, since on
+   * this palette every interactive state moves towards the light. */
+  --color-accent-strong: #e8ff7a;
+  --color-accent-text: #0b0f0e;
+  /* The accent at texture strength: the hatch behind the header bar, and the
+   * glow above the credentials card. */
+  --color-accent-veil: rgba(215, 255, 60, 0.07);
+  --color-accent-glow: rgba(215, 255, 60, 0.12);
+  /* Failure, and the armed/selected waypoint — the one warm signal on an
+   * otherwise cold palette, so it never has to compete with the accent. */
+  --color-error: #ff7a5c;
+  --color-error-veil: rgba(255, 122, 92, 0.08);
+  /* The ring is drawn *outside* the control (`outline-offset`), so it always
+   * lands on a dark panel and never inside an accent-filled button. */
+  --color-focus: #d7ff3c;
+  --color-shadow: rgba(0, 0, 0, 0.85);
+  /* The veil the credentials screen draws over whatever is behind it. */
+  --color-scrim: rgba(4, 7, 6, 0.86);
+
+  /* --- Elevation ------------------------------------------------------- */
+  /* Long and soft, and dark rather than grey: over a light map a dark panel
+   * needs a shadow to separate from the tiles under it, and a short one on a
+   * dark panel just looks like a smudge. The inset highlight is the top edge
+   * catching light, which is what stops a black rectangle reading as a hole.  */
+  --shadow-panel: 0 22px 44px -26px var(--color-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-control: 0 12px 26px -18px var(--color-shadow);
+  --shadow-modal: 0 40px 80px -40px var(--color-shadow);
+
+  /* --- The route ------------------------------------------------------- */
+  /* Drawn as two stacked polylines: a dark casing under a bright core. The
+   * accent alone is a pale line on pale map tiles; the casing is what gives
+   * it an edge over any tile it crosses, and the pair together is what makes
+   * the route the heaviest mark on the screen. */
+  --color-route: #d7ff3c;
+  --color-route-casing: #0b0f0e;
+  /* A waypoint is a dark node with a white ring — distinct from the route in
+   * both colour and shape (FR-005). The fill is dark because the map under it
+   * is not: street tiles are mostly white and pale grey, so a light dot has
+   * only its outline holding it together, while a dark one is the highest
+   * contrast mark available against them. The ring is what then separates it
+   * from the route's own dark casing where the line runs underneath. */
+  --color-waypoint: #0b0f0e;
+  --color-waypoint-ring: #ffffff;
+  /* The waypoint whose options are open or whose move is armed (FR-014) —
+   * distinct from both --color-waypoint and --color-route. */
+  --color-waypoint-selected: #ff5a1f;
+
+  /* --- Space ----------------------------------------------------------- */
   --space-xs: 0.4rem;
   --space-sm: 0.5rem;
   --space-md: 0.75rem;
   --space-lg: 1rem;
 
-  --radius: 0.25rem;
-  --radius-lg: 0.5rem;
+  --radius: 0.375rem;
+  --radius-lg: 0.75rem;
+  --radius-pill: 999px;
 
-  /* 44px: the smallest control a finger hits reliably, and therefore both the
-   * minimum size of every interactive overlay control and the height of one
-   * row of them — the two have to be the same number for the offsets that
-   * stack one panel above another to stay correct. */
-  --size-control-row: 2.75rem;
-  --size-readout-column: 6rem;
+  /* 48px. A finger hits 44px reliably, and this is deliberately a notch above
+   * that rather than exactly it: a control sized to the minimum can still be
+   * *painted* a fraction under it when its row lands on a half-pixel, which is
+   * a real (if marginal) touch target and which `e2e/mobile.spec.ts` reads as
+   * a failure. It is also the height of one row of controls — the size and the
+   * row have to be one number for the bars built on it to stay aligned. */
+  --size-control-row: 3rem;
+  /* Leaflet's attribution runs along the very bottom of the map and may not be
+   * covered: the footer bar starts above it. */
   --space-map-bottom: 2.5rem;
-  --space-map-bottom-right: 6rem;
 
-  --font-ui: 14px/1.4 system-ui, sans-serif;
+  /* --- Type ------------------------------------------------------------ */
+  --font-family-display: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-family-ui: 'Barlow', system-ui, sans-serif;
+
+  --font-ui: 500 14px/1.45 var(--font-family-ui);
   /* 16px, not `--font-ui`'s 14px: mobile Safari zooms the page in on a focused
    * field whose text is smaller than 16px, and never zooms back out — on a
    * full-viewport map that leaves the visitor stranded at the wrong scale. */
-  --font-ui-field: 16px/1.4 system-ui, sans-serif;
+  --font-ui-field: 400 16px/1.45 var(--font-family-ui);
+  /* Uppercase micro-labels: what a control or a figure is. Always paired with
+   * --tracking-label — condensed capitals set solid are unreadable. */
+  --font-label: 600 11px/1 var(--font-family-display);
+  /* Button labels: condensed capitals, so a long one ("Add waypoint at map
+   * centre") stays a single row on a phone. */
+  --font-action: 600 14px/1 var(--font-family-display);
+  /* The distance itself — the largest thing on the screen after the map. It
+   * scales with the viewport rather than sitting at one size, since the bar it
+   * lives in goes from a phone's width to a laptop's. */
+  --font-distance: 700 clamp(2.5rem, 11vw, 4.25rem) / 0.82 var(--font-family-display);
+  --tracking-label: 0.14em;
+  --tracking-action: 0.06em;
 
   --z-overlay: 1000;
   --z-modal: 1100;

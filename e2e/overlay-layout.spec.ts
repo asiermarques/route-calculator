@@ -6,8 +6,9 @@ import { supplyCredentials } from './support/supply-credentials'
 /** Every control sits on top of the map, absolutely positioned, so nothing in
  * the layout stops two of them landing on the same pixels. A control drawn
  * over another is unusable — the one underneath never receives the click.
- * Leaflet's own zoom buttons and attribution count: they are in the same
- * corners as the app's overlays and are just as easy to bury. */
+ * The controls now live in two bars — a header and a footer — so most of this
+ * is about the bars themselves staying clear of each other and of Leaflet's
+ * attribution, which is the last thing left floating in a corner of the map. */
 
 type Box = { x: number; y: number; width: number; height: number }
 

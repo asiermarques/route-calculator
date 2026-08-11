@@ -4,17 +4,13 @@ import { DomEvent } from 'leaflet'
 import type { LeafletMouseEvent, Polyline as LeafletPolyline } from 'leaflet'
 import type { Waypoint } from './useRoute'
 import type { LatLng } from '../shared/routing/types'
-import { useDisableMapClickPropagation } from '../shared/map/useDisableMapClickPropagation'
 import { WaypointOptionsPanel } from './WaypointOptionsPanel'
 import { panelPlacement } from './panelPlacement'
 import { useCoarsePointer } from './useCoarsePointer'
-import styles from './RouteLayer.module.css'
 
 type RouteLayerProps = {
   waypoints: Waypoint[]
   path: LatLng[]
-  isRouting: boolean
-  error: string | null
   onAddWaypoint: (point: LatLng) => void
   onDeleteWaypoint: (id: string) => void
   onMoveWaypoint: (id: string, point: LatLng) => void
@@ -29,35 +25,64 @@ const NO_EDIT: EditState = { selected: null, armed: null }
 /** Marker radius in pixels, by how precisely the visitor can point. A finger
  * covers far more of the screen than a cursor hotspot does, and a Leaflet
  * vector marker is hit-tested against exactly the shape it draws — so at the
- * fine-pointer size a waypoint is a 12px target, which on a phone is most of
+ * fine-pointer size a waypoint is a 14px target, which on a phone is most of
  * the way to unhittable. The touch size is the dot itself, not an invisible
  * halo around it: a bigger dot is also easier to *see* on a small screen, and
  * a marker whose hit area is larger than it looks would swallow taps meant
  * for the map next to it. */
-const WAYPOINT_RADIUS_FINE = 6
-const WAYPOINT_RADIUS_COARSE = 11
-// The drawn route answers no clicks of its own — a tap on it means the same
-// thing as a tap on the map underneath. Saying so explicitly matters on touch:
-// as an interactive layer the line is a large tap target lying directly under
-// every waypoint, and a tap meant for a marker gets resolved to the line
-// instead, which then bubbles to the map and appends a waypoint rather than
-// opening the options for the one that was aimed at. A mouse never sees this
-// — its hit test is a single point, and the marker is painted above the line
-// — so the failure is touch-only. `bringToBack()` below fixes the paint order
-// but not this, since the line stays hit-testable wherever it is drawn.
-const PATH_OPTIONS = { color: 'var(--color-route)', weight: 4 }
+const WAYPOINT_RADIUS_FINE = 7
+const WAYPOINT_RADIUS_COARSE = 13
+/** How much bigger the marked waypoint is drawn (FR-014). Colour carries that
+ * state, but the route line is heavy enough that a marker which only changes
+ * hue can still be read as part of it; growing is the difference that survives
+ * being glanced at. */
+const WAYPOINT_RADIUS_MARKED = 3
+// The route is drawn as two stacked lines — a dark casing under a bright core
+// (docs/DESIGN.md). The accent alone is a pale line over pale map tiles; the
+// casing is what gives it an edge over every tile it crosses, and the pair is
+// deliberately the heaviest mark on the screen, since the route is the thing
+// the app is for.
+//
+// Neither answers clicks of its own — a tap on the route means the same thing
+// as a tap on the map underneath. Saying so explicitly matters on touch: as an
+// interactive layer the line is a large tap target lying directly under every
+// waypoint, and a tap meant for a marker gets resolved to the line instead,
+// which then bubbles to the map and appends a waypoint rather than opening the
+// options for the one that was aimed at. A mouse never sees this — its hit
+// test is a single point, and the marker is painted above the line — so the
+// failure is touch-only. `bringToBack()` below fixes the paint order but not
+// this, since the line stays hit-testable wherever it is drawn.
+const PATH_OPTIONS = {
+  color: 'var(--color-route)',
+  weight: 7,
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+}
+const PATH_CASING_OPTIONS = {
+  color: 'var(--color-route-casing)',
+  weight: 13,
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+}
+// A waypoint is a dark node with a light ring: distinct from the route in
+// colour and in shape (FR-005). The fill takes the contrast against the map —
+// street tiles are mostly white and pale grey — and the ring takes the
+// contrast against the route's own dark casing, which the dot sits on top of.
 const WAYPOINT_OPTIONS = {
-  color: 'var(--color-waypoint)',
+  color: 'var(--color-waypoint-ring)',
   fillColor: 'var(--color-waypoint)',
   fillOpacity: 1,
+  // Wide enough to be seen as a halo rather than as an outline: where a
+  // waypoint sits on the route, the ring is all that separates the dot from
+  // the casing directly under it, and both are the same dark colour.
+  weight: 4,
 }
 // The waypoint whose options are open, or whose move is armed (FR-014): the
 // same marking carries both, since it's also what tells a touch user which
 // waypoint an armed move applies to, where there is no cursor to say so.
 const WAYPOINT_OPTIONS_EDITING = {
-  color: 'var(--color-waypoint-selected)',
+  ...WAYPOINT_OPTIONS,
   fillColor: 'var(--color-waypoint-selected)',
-  fillOpacity: 1,
 }
 
 type WaypointMarkerProps = {
@@ -97,7 +122,7 @@ const WaypointMarker = memo(function WaypointMarker({
   return (
     <CircleMarker
       center={center}
-      radius={radius}
+      radius={isEditing ? radius + WAYPOINT_RADIUS_MARKED : radius}
       pathOptions={isEditing ? WAYPOINT_OPTIONS_EDITING : WAYPOINT_OPTIONS}
       eventHandlers={eventHandlers}
     />
@@ -105,22 +130,21 @@ const WaypointMarker = memo(function WaypointMarker({
 })
 
 /** Renders the route being drawn on the map: the snapped path and its
- * waypoints, styled distinctly from each other (FR-005), plus feedback while
- * a segment is being routed or after a failed one (UX requirement, FR-009).
+ * waypoints, styled distinctly from each other (FR-005). What the routing
+ * provider is doing while a segment is in flight is `RoutingStatus`, which
+ * lives in the footer bar with the rest of the shell rather than floating over
+ * the map on its own.
  * A click on empty map adds a waypoint at the end of the route (FR-003); a
  * click on an existing waypoint opens options to delete or move it instead
  * (004-waypoint-edit-affordances). */
 export function RouteLayer({
   waypoints,
   path,
-  isRouting,
-  error,
   onAddWaypoint,
   onDeleteWaypoint,
   onMoveWaypoint,
 }: RouteLayerProps) {
   const map = useMap()
-  const statusRef = useDisableMapClickPropagation<HTMLDivElement>()
   const [editState, setEditState] = useState<EditState>(NO_EDIT)
   const waypointRadius = useCoarsePointer() ? WAYPOINT_RADIUS_COARSE : WAYPOINT_RADIUS_FINE
 
@@ -169,17 +193,25 @@ export function RouteLayer({
   useMapEvents(handlers)
 
   // Leaflet's SVG renderer paints layers in the order they were added to the
-  // map, not JSX order — the polyline mounts only once a first segment
+  // map, not JSX order — the polylines mount only once a first segment
   // resolves, by which point the first two waypoints' own markers already
-  // exist, so without this the polyline would paint (and hit-test) on top of
-  // them wherever the path passes through a marker's position. Markers added
-  // afterwards already land on top naturally; sending the line to the back
+  // exist, so without this the route would paint (and hit-test) on top of them
+  // wherever the path passes through a marker's position. Markers added
+  // afterwards already land on top naturally; sending the route to the back
   // once, when it (re)appears, keeps every marker clickable regardless of
   // mount order.
+  //
+  // Order matters between the two lines themselves: `bringToBack` puts a layer
+  // at the very back, so sending the core first and the casing second leaves
+  // the casing underneath its own core — which is the only arrangement in
+  // which the casing reads as an outline rather than as a thick line drawn
+  // over the route.
   const polylineRef = useRef<LeafletPolyline>(null)
+  const casingRef = useRef<LeafletPolyline>(null)
   const hasPolyline = positions.length > 1
   useEffect(() => {
     polylineRef.current?.bringToBack()
+    casingRef.current?.bringToBack()
   }, [hasPolyline])
 
   // Stable identity regardless of which waypoint is selected/armed, so an
@@ -252,15 +284,23 @@ export function RouteLayer({
   return (
     <>
       {hasPolyline && (
-        <Polyline
-          ref={polylineRef}
-          positions={positions}
-          pathOptions={PATH_OPTIONS}
-          // A layer-construction option, not a style: `pathOptions` is applied
-          // with Leaflet's `setStyle`, which cannot make an already-interactive
-          // layer inert, so this has to be its own prop to take effect at all.
-          interactive={false}
-        />
+        <>
+          <Polyline
+            ref={casingRef}
+            positions={positions}
+            pathOptions={PATH_CASING_OPTIONS}
+            interactive={false}
+          />
+          <Polyline
+            ref={polylineRef}
+            positions={positions}
+            pathOptions={PATH_OPTIONS}
+            // A layer-construction option, not a style: `pathOptions` is applied
+            // with Leaflet's `setStyle`, which cannot make an already-interactive
+            // layer inert, so this has to be its own prop to take effect at all.
+            interactive={false}
+          />
+        </>
       )}
       {waypoints.map((waypoint) => (
         <WaypointMarker
@@ -282,14 +322,6 @@ export function RouteLayer({
           onMove={() => handleChooseMove(selectedWaypoint.id)}
         />
       )}
-      {/* Mounted even with nothing to report, so assistive technology is
-       * already observing the region when a message arrives — a live region
-       * inserted together with its first message is announced unreliably.
-       * Empty, it has no panel of its own: see `.status:not(:empty)`. */}
-      <div ref={statusRef} className={styles.status} role="status">
-        {isRouting && <span>Routing…</span>}
-        {error && <p className={styles.error}>{error}</p>}
-      </div>
     </>
   )
 }

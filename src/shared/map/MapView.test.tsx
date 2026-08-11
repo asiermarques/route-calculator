@@ -18,7 +18,6 @@ vi.mock('react-leaflet', () => ({
     tileLayerProps(props)
     return <div data-testid="tile-layer" />
   },
-  ZoomControl: () => <div data-testid="zoom-control" />,
 }))
 
 const { MapView } = await import('./MapView')
@@ -44,6 +43,17 @@ describe('MapView', () => {
         url: OSM_TILE_URL,
         attribution: OSM_ATTRIBUTION,
       }),
+    )
+  })
+
+  it('leaves zooming to the app\'s own control rather than Leaflet\'s corner widget', () => {
+    render(<MapView />)
+
+    // `zoomControl: false` and no `<ZoomControl>`: the zoom buttons live in the
+    // footer bar (`shared/map/ZoomControls`), at the size every other control
+    // is, which is what lets that bar run the full width of the map.
+    expect(mapContainerProps).toHaveBeenCalledWith(
+      expect.objectContaining({ zoomControl: false }),
     )
   })
 

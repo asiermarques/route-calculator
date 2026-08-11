@@ -23,6 +23,11 @@ export function AddWaypointControl({ onAddWaypoint }: AddWaypointControlProps) {
   return (
     <div ref={ref} className={styles.control}>
       <button className={styles.button} type="button" onClick={handleClick}>
+        {/* Decorative: the label already says what the button does, and a
+          * glyph in the accessible name would only repeat it as punctuation. */}
+        <span className={styles.plus} aria-hidden="true">
+          +
+        </span>
         Add waypoint at map centre
       </button>
     </div>

@@ -1,0 +1,63 @@
+/* A row of the footer bar (`shared/layout/AppFooter`) that exists only when
+ * there is something to say. It stays in the DOM either way so it can serve as
+ * a live region (RoutingStatus.tsx) — which is also why it is never
+ * `display: none`: a region hidden that way is not reliably announced when it
+ * comes back. Empty, it has no box and adds no gap, so the bar around it is
+ * the height of one row of controls. */
+.status {
+  flex-basis: 100%;
+  min-width: 0;
+  font: var(--font-ui);
+  color: var(--color-text);
+}
+
+.status:not(:empty) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  /* The gap that would otherwise be a `gap` on the bar itself, where it would
+   * also apply while this is empty. */
+  margin-bottom: var(--space-xs);
+  padding: 0 var(--space-xs);
+}
+
+/* "Routing…" is the one transient state the app has, and the map behind it
+ * does not change while it lasts — so the bar says it is working with a pulse
+ * rather than with the word alone. */
+.routing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font: var(--font-label);
+  font-size: 12px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.pulse {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-accent);
+  animation: pulse 900ms ease-in-out infinite;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-error);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}

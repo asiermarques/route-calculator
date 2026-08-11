@@ -19,7 +19,11 @@ export function WaypointOptionsPanel({ style, onDelete, onMove }: WaypointOption
 
   return (
     <div ref={ref} className={styles.panel} style={style} role="group" aria-label="Waypoint options">
-      <button className={styles.button} type="button" onClick={onDelete}>
+      <button
+        className={`${styles.button} ${styles.destructive}`}
+        type="button"
+        onClick={onDelete}
+      >
         Delete
       </button>
       <button className={styles.button} type="button" onClick={onMove}>

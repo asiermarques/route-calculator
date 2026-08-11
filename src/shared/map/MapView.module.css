@@ -3,6 +3,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  background: var(--color-void);
 }
 
 /* A click on the map places a waypoint there (FR-001, docs/DESIGN.md). Beats
@@ -16,4 +17,52 @@
  * cursor value inherited from an ancestor like this one. */
 .map:global(.leaflet-container) {
   cursor: crosshair !important;
+}
+
+/* The tiles are held back a little so the route can be the loudest thing on
+ * the screen. Applied to the tile pane alone, not to the container: a filter
+ * on an ancestor creates a containing block, and every marker, overlay and
+ * control would be dulled along with the map — including the accent the route
+ * is drawn in, which is the whole point of muting the tiles. */
+.map :global(.leaflet-tile-pane) {
+  filter: saturate(0.62) contrast(1.04) brightness(1.03);
+}
+
+/* Leaflet's own controls, brought onto this palette. Their *size* is still
+ * Leaflet's (docs/DESIGN.md — restyling a third-party control's internals is
+ * more than this app needs), but a white chrome-plated widget in the corner of
+ * an otherwise dark instrument reads as something the page failed to style. */
+.map :global(.leaflet-bar) {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-control);
+  overflow: hidden;
+}
+
+.map :global(.leaflet-bar a) {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+
+.map :global(.leaflet-bar a:hover) {
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+}
+
+.map :global(.leaflet-bar a.leaflet-disabled) {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.map :global(.leaflet-control-attribution) {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: 0 var(--space-xs);
+  border-top-left-radius: var(--radius);
+  font-family: var(--font-family-ui);
+}
+
+.map :global(.leaflet-control-attribution a) {
+  color: var(--color-text);
 }

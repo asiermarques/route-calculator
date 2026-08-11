@@ -13,8 +13,10 @@ map. No backend — see `docs/ARCHITECTURE.md`.
 Vertical slices by feature under `src/`:
 
 - `src/shared/` — cross-cutting concerns used by more than one slice: the map
-  instance/context, build-time configuration, the routing-provider interface.
-  Nothing feature-specific lives here.
+  instance/context, build-time configuration, the routing-provider interface,
+  the design tokens and fonts, the app's name/mark (`shared/brand/`), the zoom
+  controls, and the header and footer bars the slices' controls are composed
+  into (`shared/layout/`). Nothing feature-specific lives here.
 - `src/address-search/` — the address search bar and Nominatim client.
 - `src/route-drawing/` — waypoints, snapped segments, distance (later slices).
 - `src/route-correction/` — undo/clear (later slice).
@@ -45,8 +47,12 @@ may import from `src/shared/`; slices do not import from each other.
 
 ## Design tokens
 
-Any UI work follows `docs/DESIGN.md` once it exists. No raw colour/utility
-values outside tokens.
+Any UI work follows `docs/DESIGN.md`. No raw colour/utility values outside
+tokens — including shadows and tints, which have tokens of their own.
+
+Fonts are **self-hosted** from `public/fonts/` (`src/shared/design/fonts.css`).
+Never link a font CDN: it is a third-party origin on a page that handles a
+visitor's routing key, and the production CSP allows `font-src 'self'` only.
 
 ## Mobile first
 
@@ -63,7 +69,8 @@ So for any new or changed UI:
   desktop width and then squeezed is how controls end up overlapping and panels
   end up unreachable.
 - **Every interactive control gets `min-height: var(--size-control-row)`**
-  (44px) — buttons, text fields, selects. `input` and `select` also take
+  (48px — a notch above the 44px a finger needs, see `docs/DESIGN.md`) —
+  buttons, text fields, selects. `input` and `select` also take
   `--font-ui-field` (16px), which is what stops mobile Safari zooming the page
   in on focus and never zooming back out.
 - **Any panel that can outgrow the viewport must scroll to both ends.** Centre
@@ -74,15 +81,22 @@ So for any new or changed UI:
   a second, visible carrier on touch (the marked waypoint is the existing
   example). Sizes Leaflet takes as numbers rather than CSS — marker radii —
   come from `useCoarsePointer`, not a constant.
+- **A new control goes in one of the two bars, not on the map.** The app's
+  name, the address search, the distance and the change-provider button share
+  the header (`src/shared/layout/AppHeader`); add-waypoint, undo/clear, the
+  routing status and zoom share the footer (`AppFooter`). Both stack to two
+  rows on a phone, and `App.tsx` fills their slots, so the slices the controls
+  come from still don't import each other. Nothing else floats over the map
+  except the waypoint options panel, which is anchored to its waypoint.
 - **Cover it in `e2e/mobile.spec.ts`**, which runs at phone viewports with
   `hasTouch`/`isMobile` on, and add the control to the touch-target sweep
   there. `e2e/overlay-layout.spec.ts` separately asserts that no two overlays
   cover each other at phone, tablet and desktop widths — a new overlay belongs
   in its list. Unit tests cannot catch any of this: jsdom has no layout.
-- Read `docs/DESIGN.md` "Rules" before changing a size or an offset. The
-  corner-stacking offsets are computed from `--size-control-row`, so changing
-  a control's height without going through that token silently breaks the
-  spacing of whatever sits above it.
+- Read `docs/DESIGN.md` "Rules" before changing a size or an offset. Both bars
+  are built from `--size-control-row`, so changing a control's height without
+  going through that token silently changes how the bar around it stacks and
+  wraps.
 
 ## Configuration
 

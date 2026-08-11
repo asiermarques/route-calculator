@@ -1,28 +1,36 @@
+/* Sits in the footer bar (`shared/layout/AppFooter`), which places it. */
 .controls {
-  position: absolute;
-  /* Above Leaflet's own zoom control and attribution, which own this corner —
-   * a button drawn over "zoom out" is a button the user cannot press. */
-  bottom: var(--space-map-bottom-right);
-  right: var(--space-lg);
-  z-index: var(--z-overlay);
   display: flex;
+  align-items: center;
   gap: var(--space-sm);
 }
 
+/* Corrective, not primary: outlined rather than filled with the accent, which
+ * belongs to the route and to the answer. */
 .button {
   min-height: var(--size-control-row);
-  padding: var(--space-xs) var(--space-md);
+  padding: 0 var(--space-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-text);
-  box-shadow: 0 1px 4px var(--color-shadow);
-  font: var(--font-ui);
+  font: var(--font-action);
+  letter-spacing: var(--tracking-action);
+  text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-raised);
 }
 
 .button:disabled {
-  opacity: 0.6;
+  color: var(--color-text-muted);
+  border-color: transparent;
   cursor: default;
 }

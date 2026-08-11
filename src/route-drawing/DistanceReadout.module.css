@@ -1,22 +1,102 @@
-.readout {
-  position: absolute;
-  top: var(--space-lg);
-  right: var(--space-lg);
-  /* The width the address search bar is told to stop short of, so the two
-   * top corners cannot grow into each other. */
-  max-width: var(--size-readout-column);
-  /* The height of one control row, which is what the "change routing
-   * provider" button below is offset by to stack under this — text alone
-   * would leave that offset guessing at this panel's height. */
-  min-height: var(--size-control-row);
-  z-index: var(--z-overlay);
+/* The answer, at display size. It sits in the header bar
+ * (`shared/layout/AppHeader`), which places it — this module owns how it
+ * reads, not where it is. */
+.figure {
+  position: relative;
   display: flex;
-  align-items: center;
-  background: var(--color-surface);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 1px 4px var(--color-shadow);
-  font: var(--font-ui);
-  font-weight: 600;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.label {
+  font: var(--font-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+@media (min-width: 44rem) {
+  .label {
+    font-size: 12px;
+  }
+}
+
+.value {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.2em;
+  padding-bottom: 0.3rem;
+  animation: figureIn 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+/* The rule under the figure: a measurement bar that redraws itself, right to
+ * left, every time a new total lands. It is the confirmation that the number
+ * changed — on a screen where the map is moving under it, a figure that
+ * silently swaps digits is easy to miss. */
+.value::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  transform-origin: right center;
+  animation: sweep 460ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.number {
+  font: var(--font-distance);
+  letter-spacing: -0.02em;
   color: var(--color-text);
+  /* Every digit the same width, so the figure doesn't jitter sideways as the
+   * route grows past 9.9 km and back. */
+  font-variant-numeric: tabular-nums;
+}
+
+.unit {
+  font-family: var(--font-family-display);
+  /* Tied to the figure's own scale: a fixed unit next to a `clamp()`-ed number
+   * drifts from "part of the same reading" to "a caption" as the screen grows. */
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+/* Nothing drawn yet: the instrument is at rest rather than reporting a
+ * measurement, and says so by dropping to the muted end of the palette. */
+.value[data-empty] .number,
+.value[data-empty] .unit {
+  color: var(--color-text-muted);
+}
+
+.value[data-empty]::after {
+  background: var(--color-border-strong);
+}
+
+@keyframes figureIn {
+  from {
+    opacity: 0.2;
+    transform: translateY(0.2rem);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .value,
+  .value::after {
+    animation: none;
+  }
 }

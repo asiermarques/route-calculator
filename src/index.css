@@ -1,10 +1,13 @@
 @import './shared/design/tokens.css';
+@import './shared/design/fonts.css';
 
 :root {
-  /* One palette, deliberately (docs/DESIGN.md). Declaring `light dark` would
-   * let the browser render form controls from the OS theme while every panel
-   * here stays on the light tokens — a dark input inside a white bar. */
-  color-scheme: light;
+  /* One palette, deliberately (docs/DESIGN.md) — a dark one. Declaring
+   * `dark` is what keeps the browser's own chrome inside these panels in the
+   * same world as them: a `<select>` drop-down, a scrollbar and a text
+   * caret all come from the OS theme, and under `light` a white drop-down
+   * would open out of a near-black field. */
+  color-scheme: dark;
 }
 
 /* Sizes include padding and border. Overlay controls are given an explicit
@@ -26,8 +29,21 @@ body,
   height: 100%;
 }
 
+body {
+  /* Only ever seen before the map exists — on first load the credentials
+   * screen is the whole page, and a transparent body would show through it as
+   * the browser's default white. */
+  background: var(--color-void);
+  color: var(--color-text);
+  font: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
 /* One focus ring for the whole app, Leaflet's own controls included. Overlay
- * panels sit on a busy map, so the keyboard position has to stay obvious. */
+ * panels sit on a busy map, so the keyboard position has to stay obvious.
+ * The offset matters as much as the colour: drawn outside the control, the
+ * ring always lands on the dark panel behind it, including on the one button
+ * that is itself filled with the accent. */
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;

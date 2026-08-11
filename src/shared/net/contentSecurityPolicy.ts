@@ -25,6 +25,13 @@ export function buildContentSecurityPolicy(): string {
     // vite.config.ts), never a reason to relax this.
     ['script-src', ["'self'"]],
     ['style-src', ["'self'"]],
+    // The app's two typefaces are served from this origin (`public/fonts/`,
+    // `src/shared/design/fonts.css`). A font CDN would mean a third-party
+    // origin listed here, on a page that handles a visitor's routing key —
+    // which is exactly what CLAUDE.md's no-third-party rule forbids. Under
+    // `default-src 'none'` this directive is not optional: without it the
+    // browser blocks the app's own fonts.
+    ['font-src', ["'self'"]],
     ['base-uri', ["'self'"]],
     ['object-src', ["'none'"]],
     ['form-action', ["'none'"]],

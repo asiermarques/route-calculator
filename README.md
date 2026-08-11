@@ -1,39 +1,61 @@
-# routes
+# Route Calculator
 
 A simple web app to draw a route on a map and know how many kilometres it is.
-Search for an address, click along the map to build a route, and see the
-distance update live. No account, nothing saved — see `docs/PRODUCT.md`.
+Search for an address, click along the map to build a route, and watch the
+distance update live. Segments follow real streets and paths — like a route
+builder for a run, ride or walk — so the figure is one you can trust.
 
-Status: **Map and route drawing shipped** — address search, route drawing
-with live distance, and undo/clear (see
-`.workflow/implementation-plans/001-map-route-drawing.md`) — **plus
-runtime routing credentials**: a production build ships with no routing API
-key, asks each visitor for their own on a blocking credentials screen, and
-that screen is reachable again from within the app to correct a mistyped key
-or a wrong provider, no reload needed (see
-`.workflow/implementation-plans/002-visitor-routing-key-entry.md`).
+No account, no tracking, nothing saved: the route lives in the open tab and
+that is all. See `docs/PRODUCT.md` for what this is and isn't.
+
+**Status: usable.** Address search, click-to-draw routing with a live total,
+per-waypoint delete and move, undo/clear, and — on a public deploy — a
+credentials screen where each visitor supplies their own routing key. Plans
+and requirements for each of those live in `.workflow/`.
 
 ## Quick start
 
+Requires Node **20.19+** or **22.12+** (what Vite 8 needs).
+
 ```bash
 npm install
-cp .env.example .env   # then set VITE_ROUTING_API_KEY — see below
+cp .env.example .env    # then set VITE_ROUTING_API_KEY — see below
 npm run dev             # http://localhost:5173
 ```
 
 The map (OpenStreetMap tiles) and address search (Nominatim) work with no API
-key. `.env` supplies a routing-provider key for local development only, so
-`npm run dev` comes up straight into the map. Without it, `npm run dev` shows
-the same credentials screen a production build shows every visitor — see
-below.
+key at all. `.env` supplies a routing-provider key for local development only,
+so `npm run dev` comes up straight into the map. Leave it unset and you get
+the same credentials screen a production build shows every visitor.
+
+## Using it
+
+- **Find where you're going.** Type an address in the header bar and press
+  Search. This only moves the map — it never places a waypoint.
+- **Draw the route.** Click (or tap) the map to add a waypoint. From the second
+  one on, each new segment is routed along real streets, and the total in the
+  header updates. `Routing…` in the bottom bar means a segment is in flight.
+- **Fix a waypoint.** Click one to open its options:
+  - **Delete** removes it and re-joins its neighbours with one new segment.
+  - **Move** arms it — the next click on the map is its new position, and both
+    sides re-route. Click the waypoint again, or press `Esc`, to cancel.
+- **Start over.** *Remove last waypoint* drops the most recent one; *Clear*
+  empties the route.
+- **Without a mouse.** Arrow keys pan the map, `+`/`−` zoom, and *Add waypoint
+  at map centre* drops one where the map is pointed — so a route can be drawn
+  end to end from the keyboard. Editing an existing waypoint is
+  pointer/touch-only by decision; undo and clear are the keyboard path back.
+- **Reloading discards everything**, including the routing key on a public
+  deploy. That is deliberate, not an oversight.
 
 ## Testing
 
 ```bash
-npm test           # unit/integration tests (Vitest)
+npm test            # unit/integration tests (Vitest)
 npm run build       # production build, required before e2e
 npm run e2e:install # one-time: installs the Playwright browser
 npm run e2e         # end-to-end tests (Playwright, against the build)
+npm run lint        # oxlint
 ```
 
 Both suites run fully offline: third-party requests (map tiles, Nominatim,
@@ -54,7 +76,7 @@ on the build:
   their own key, which is held in memory for that browser tab only, sent only
   to the chosen provider, and gone on reload. The screen carries the same
   how-to-get-a-key guidance below, inline, so a first-time visitor never has
-  to leave the page for it. The 🔑 button next to the distance readout
+  to leave the page for it. The key button in the header bar
   reopens the screen at any time — to fix a mistyped key or switch provider —
   without reloading or losing the drawn route. See
   `docs/adr/0001-user-supplied-routing-api-key-in-browser-storage.md`.
@@ -94,9 +116,57 @@ regardless of who typed it in. Whoever holds one should:
 A key the provider rejects isn't checked at entry time — it surfaces the same
 way any other routing failure does, the next time a segment is routed.
 
+## Deploying
+
+`npm run build` produces plain static files in `dist/`, deployable to any
+static host. There is no backend and no build-time configuration: the build
+takes no environment variables, and each visitor supplies their own routing
+key at runtime. Four things are worth knowing before putting it on a domain:
+
+- **The Content-Security-Policy ships inside `dist/index.html`**, as a `<meta>`
+  tag generated from `src/shared/net/outboundOrigins.ts`. It is what stands
+  between script running on your origin and a visitor's key leaving it. If your
+  host also sends a CSP header, it must not be looser than that policy — and
+  `frame-ancestors` only takes effect from a header, so sending one is an
+  improvement, not a duplication.
+- **Do not send `Referrer-Policy: no-referrer`.** A browser can't set a custom
+  `User-Agent`, so the page's referrer is what identifies this app to
+  Nominatim; stripping it breaks address search and violates their usage
+  policy.
+- **The tiles come from OpenStreetMap's own servers**, which are donated
+  infrastructure with a [usage policy](https://operations.osmfoundation.org/policies/tiles/)
+  aimed at low-volume use. A deployment with real traffic should point
+  `OSM_TILE_URL` (`src/shared/map/constants.ts`) at its own tile provider, and
+  add that origin to `outboundOrigins.ts` so the policy follows.
+- **Never add a third-party script to the page** — analytics, chat widgets,
+  embeds — for as long as the app handles visitors' routing keys. That is a
+  security invariant of this project, not a style rule (`CLAUDE.md`).
+
 ## Documentation
 
 - `docs/PRODUCT.md` — what this is and isn't, for whom.
-- `docs/ARCHITECTURE.md` — stack and shape.
-- `docs/DESIGN.md` — design tokens for UI work.
+- `docs/ARCHITECTURE.md` — stack, shape, and the constraints that follow from
+  having no backend.
+- `docs/DESIGN.md` — the look, the type, and the design tokens for UI work.
+- `docs/adr/` — the decisions that were hard enough to write down.
 - `CLAUDE.md` — code layout and testing conventions.
+
+## Licence
+
+[MIT](LICENSE) © 2026 Asier Marqués.
+
+The app is MIT-licensed; what it draws and what it is built from are not all
+under the same terms:
+
+- **Map data and tiles** — © OpenStreetMap contributors, available under the
+  [Open Database License](https://www.openstreetmap.org/copyright). The
+  attribution shown on the map is required and must not be removed or covered.
+- **Address search** — [Nominatim](https://nominatim.org/), same data, subject
+  to its [usage policy](https://operations.osmfoundation.org/policies/nominatim/).
+- **Routing** — whichever provider a visitor connects, under that provider's
+  own terms and quota. Route geometry from a provider is not necessarily
+  redistributable; this app only draws it, and stores nothing.
+- **Fonts** — Saira Condensed and Barlow, under the SIL Open Font License 1.1
+  (`public/fonts/LICENSE.md`), bundled with the app.
+- **Libraries** — React (MIT) and Leaflet (BSD-2-Clause), among others; see
+  `package.json` and each package's own licence.

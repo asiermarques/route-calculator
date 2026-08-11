@@ -41,8 +41,18 @@ treated as no exception to it (`docs/adr/0001-user-supplied-routing-api-key-in-b
 
 Vertical slices by feature (e.g. `address-search`, `route-drawing`), each
 owning its UI, state and service calls. Cross-cutting concerns (map instance,
-configuration, the routing provider interface) live in `src/shared/`. See
-`CLAUDE.md` for the current slice list and testing conventions.
+configuration, the routing provider interface, design tokens and fonts, the
+app's name/mark, the header and footer bars, the zoom control) live in
+`src/shared/`. See `CLAUDE.md` for the
+current slice list and testing conventions.
+
+The two bars (`src/shared/layout/AppHeader`, `AppFooter`) are the shell, not a
+feature: they know where a control goes, and `App.tsx` is the only place that
+knows which slice each of them comes from. Same arrangement as the route state
+below — composition happens in `App.tsx` so that slices never reach for each
+other. Zooming is the app's own control too (`src/shared/map/ZoomControls`)
+rather than Leaflet's corner widget, so that every control lives in a bar; it
+drives the same map instance through `useMap`.
 
 Route state (waypoints, snapped segments, distance) is owned by one hook in
 `route-drawing` and passed down as props to the overlay controls in
@@ -132,3 +142,10 @@ spacing values in component styles.
   malicious browser extension and a supply-chain compromise of a dependency
   both execute inside the page's own context and are accepted as residual
   risks the policy cannot address (`docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`).
+- **Nothing the app needs comes from a third-party origin except the four
+  services above.** That is why the two typefaces are copied into
+  `public/fonts/` and served from this origin rather than linked from a font
+  CDN: a CDN would be a fifth origin in the policy, and script or a stylesheet
+  from it would run on the page that holds the visitor's key. `font-src` is
+  therefore `'self'` alone, and is not optional — under `default-src 'none'`
+  the browser would otherwise block the app's own fonts.

@@ -1,0 +1,103 @@
+/* The instrument the app is read and operated from. Phone-first: two rows,
+ * with the identity and the answer facing each other across the first and the
+ * search spanning the second, because at 360px no arrangement fits a field, a
+ * button and a display figure on one line. It collapses to a single row as
+ * soon as there is width for one. */
+.header {
+  position: absolute;
+  top: var(--space-lg);
+  left: var(--space-lg);
+  right: var(--space-lg);
+  z-index: var(--z-overlay);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'brand readout actions'
+    'search search search';
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+  animation: headerIn 460ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+/* A hatched band behind the bar — the app's one texture, and what keeps the
+ * space around the figure reading as part of an instrument rather than as a
+ * gap. Decorative, and never in the way of a click. */
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    115deg,
+    transparent 0 9px,
+    var(--color-accent-veil) 9px 11px
+  );
+  /* Opacity stops, not palette colours: a mask reads only the alpha channel,
+   * and the band has to fade out before it reaches the wordmark or the figure. */
+  mask-image: linear-gradient(to right, transparent 30%, #000 55%, transparent 95%);
+}
+
+.brand {
+  grid-area: brand;
+  min-width: 0;
+}
+
+.search {
+  grid-area: search;
+  min-width: 0;
+}
+
+.readout {
+  grid-area: readout;
+  justify-self: end;
+}
+
+.actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+}
+
+@media (min-width: 44rem) {
+  .header {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: 'brand search readout actions';
+    gap: var(--space-md);
+  }
+
+  .search {
+    /* Wide enough for a street address, and no wider: past this the field
+     * starts pushing the figure off the end of a laptop screen. */
+    max-width: 26rem;
+    justify-self: start;
+    width: 100%;
+  }
+
+  /* On a wide screen the figure ends up a long way from the controls it
+   * belongs with, across a stretch of empty bar. The rule is what closes that
+   * gap: it reads as a panel of the same instrument rather than as a number
+   * that drifted to the far end of it. */
+  .readout {
+    padding-left: var(--space-lg);
+    border-left: 1px solid var(--color-border);
+  }
+}
+
+@keyframes headerIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.75rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header {
+    animation: none;
+  }
+}

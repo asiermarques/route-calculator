@@ -2,7 +2,8 @@
 
 ## What this is
 
-A simple web app to draw a route on a map and know how many kilometres it is.
+**Route Calculator** — a simple web app to draw a route on a map and know how
+many kilometres it is.
 
 The user searches for an address to position the map, then clicks along the
 map to place waypoints. The app snaps each new segment to the real street

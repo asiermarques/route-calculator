@@ -1,0 +1,64 @@
+.lockup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.glyph {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.line {
+  stroke: var(--color-accent);
+}
+
+/* The ring is the panel colour, not a stroke of its own: where a node sits on
+ * the line it cuts the line rather than adding a third colour to a 28px mark. */
+.node {
+  fill: var(--color-text);
+  stroke: var(--color-surface);
+}
+
+.wordmark {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3em;
+  min-width: 0;
+  /* Scales with the viewport rather than wrapping or being hidden: on the
+   * rail this sits beside a distance figure that is doing the same thing, and
+   * a wordmark that disappears on a narrow phone takes the app's name with it. */
+  font-family: var(--font-family-display);
+  font-size: clamp(0.7rem, 3.2vw, 0.9rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: var(--tracking-action);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.name {
+  color: var(--color-text);
+}
+
+/* Second word dimmed, so the lockup reads as one name at a glance and never
+ * competes with the figure it shares the rail with. */
+.qualifier {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* The credentials screen: no map behind it, no distance beside it, so the
+ * lockup can be the size of a title. */
+.screen .glyph {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.screen .wordmark {
+  font-size: 1.35rem;
+  letter-spacing: 0.08em;
+}

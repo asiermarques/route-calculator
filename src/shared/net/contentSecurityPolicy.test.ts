@@ -45,4 +45,11 @@ describe('buildContentSecurityPolicy (US-001)', () => {
   it('declares style-src', () => {
     expect(directives['style-src']).toBeDefined()
   })
+
+  it('permits fonts from this origin only, since the app self-hosts them', () => {
+    // `default-src 'none'` blocks the app's own fonts without this, and any
+    // origin other than 'self' here would be a third-party on a page that
+    // holds a visitor's routing key.
+    expect(directives['font-src']).toEqual(["'self'"])
+  })
 })

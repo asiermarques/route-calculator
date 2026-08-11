@@ -20,6 +20,10 @@ vi.mock('./route-drawing/RouteLayer', () => ({
   },
 }))
 
+vi.mock('./shared/map/ZoomControls', () => ({
+  ZoomControls: () => <div data-testid="zoom-controls" />,
+}))
+
 vi.mock('./route-drawing/AddWaypointControl', () => ({
   AddWaypointControl: ({ onAddWaypoint }: { onAddWaypoint: (point: unknown) => void }) => (
     <button data-testid="add-waypoint-control" onClick={() => onAddWaypoint({ lat: 1, lng: 2 })}>
@@ -157,6 +161,7 @@ describe('App', () => {
       'distance-readout',
       'route-controls',
       'reopen-credentials-button',
+      'zoom-controls',
     ]) {
       expect(screen.getByTestId('map-view')).toContainElement(screen.getByTestId(testId))
     }
@@ -209,7 +214,16 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /clear/i })).not.toBeDisabled()
   })
 
-  it('wires undo and clear through to the route', async () => {
+  // One correction per test, not both in sequence: the controls now sit in the
+  // footer bar, which — like every panel inside the map — stops Leaflet from
+  // reading a click on it as a click on the map. In jsdom that guard also
+  // swallows a second synthetic click landing in the same panel within half a
+  // second, which a real browser does not do (`e2e/route-correction.spec.ts`
+  // presses both, in order, against a real build).
+  it.each([
+    ['undo', /undo/i, () => undo],
+    ['clear', /^clear$/i, () => clear],
+  ])('wires %s through to the route', async (_name, buttonName, handler) => {
     useCredentials.mockReturnValue(
       baseCredentials({ routingProvider: { getRoute: vi.fn() }, isCredentialsScreenOpen: false }),
     )
@@ -226,11 +240,9 @@ describe('App', () => {
     const user = userEvent.setup()
 
     render(<App />)
-    await user.click(screen.getByRole('button', { name: /undo/i }))
-    await user.click(screen.getByRole('button', { name: /clear/i }))
+    await user.click(screen.getByRole('button', { name: buttonName }))
 
-    expect(undo).toHaveBeenCalled()
-    expect(clear).toHaveBeenCalled()
+    expect(handler()).toHaveBeenCalled()
   })
 
   it('wires the keyboard waypoint control through to the same route as map clicks', async () => {

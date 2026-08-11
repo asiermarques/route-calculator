@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { MapContainer, TileLayer, ZoomControl } from 'react-leaflet'
+import { MapContainer, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { DEFAULT_CENTER, DEFAULT_ZOOM, OSM_ATTRIBUTION, OSM_TILE_URL } from './constants'
 import styles from './MapView.module.css'
@@ -20,9 +20,9 @@ export function MapView({ children }: MapViewProps) {
       className={styles.map}
     >
       <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
-      {/* Bottom-right: the top-left corner is reserved for overlay controls
-       * such as the address search bar. */}
-      <ZoomControl position="bottomright" />
+      {/* No `<ZoomControl>`: zooming is `shared/map/ZoomControls`, in the
+        * footer bar with every other control, rather than a third-party widget
+        * pinned to a corner at its own size (docs/DESIGN.md). */}
       {children}
     </MapContainer>
   )

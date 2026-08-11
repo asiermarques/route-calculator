@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { PROVIDER_NAMES } from '../shared/routing/config'
 import type { ProviderName } from '../shared/routing/config'
 import { PROVIDER_INFO } from './providerInfo'
+import { AppMark } from '../shared/brand/AppMark'
 import styles from './CredentialsScreen.module.css'
 
 const ERROR_ID = 'credentials-key-error'
@@ -55,6 +56,11 @@ export function CredentialsScreen({ onSubmit, initialProvider, onDismiss }: Cred
   return (
     <div className={styles.screen}>
       <form className={styles.form} onSubmit={handleSubmit} aria-label="Routing provider credentials">
+        {/* On a public deploy this screen is the app's first impression, and
+          * the only one shown before the map exists — so it carries the name. */}
+        <div className={styles.brand}>
+          <AppMark size="screen" />
+        </div>
         <h1 className={styles.heading}>Connect a routing provider</h1>
         <p className={styles.intro}>
           Drawing a route needs a routing provider&rsquo;s API key. Pick a provider and

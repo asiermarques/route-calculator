@@ -33,7 +33,10 @@ vi.mock('react-leaflet', () => ({
         type="button"
         aria-label="waypoint marker"
         data-testid="circle-marker"
-        data-color={(props.pathOptions as { color: string }).color}
+        // The dot's *fill* is what says which waypoint is marked (FR-014);
+        // its stroke is the dark ring every waypoint wears to stay legible on
+        // top of the route line, and is the same on all of them.
+        data-color={(props.pathOptions as { fillColor: string }).fillColor}
         onClick={() => eventHandlers?.click?.({ originalEvent: { stopPropagation: vi.fn() } })}
       />
     )
@@ -46,8 +49,6 @@ function makeRoute(overrides: Partial<Parameters<typeof RouteLayer>[0]> = {}) {
   return {
     waypoints: [],
     path: [],
-    isRouting: false,
-    error: null,
     onAddWaypoint: vi.fn(),
     onDeleteWaypoint: vi.fn(),
     onMoveWaypoint: vi.fn(),
@@ -89,6 +90,7 @@ describe('RouteLayer', () => {
       ],
       path,
     })
+    polylineProps.mockClear()
     render(<RouteLayer {...route} />)
 
     expect(polylineProps).toHaveBeenCalledWith(
@@ -96,9 +98,50 @@ describe('RouteLayer', () => {
     )
     expect(screen.getAllByTestId('circle-marker')).toHaveLength(2)
 
-    const polylineColor = (polylineProps.mock.calls[0][0] as { pathOptions: { color: string } }).pathOptions.color
-    const markerColor = (circleMarkerProps.mock.calls[0][0] as { pathOptions: { color: string } }).pathOptions.color
-    expect(polylineColor).not.toBe(markerColor)
+    // The route is two stacked lines, a dark casing under a bright core, so
+    // that it reads over any map tile it crosses. The core is the route's own
+    // colour, and it is that one a waypoint has to stay distinguishable from.
+    const [casing, core] = polylineProps.mock.calls.map(
+      (call) => (call[0] as { pathOptions: { color: string; weight: number } }).pathOptions,
+    )
+    expect(casing.weight).toBeGreaterThan(core.weight)
+    // A waypoint is told apart from the route by two contrasts, not one: its
+    // fill against the bright core, and its ring against the dark casing it
+    // sits on top of. The fill is deliberately the casing's own dark colour —
+    // that is what makes it stand out from the pale map tiles — so the ring is
+    // what has to differ there.
+    const marker = (circleMarkerProps.mock.calls[0][0] as {
+      pathOptions: { fillColor: string; color: string }
+    }).pathOptions
+    expect(core.color).not.toBe(marker.fillColor)
+    expect(casing.color).not.toBe(marker.color)
+  })
+
+  it('leaves both lines of the route inert, so a tap on one means a tap on the map', () => {
+    const path = [
+      { lat: 40.4, lng: -3.7 },
+      { lat: 40.41, lng: -3.71 },
+    ]
+    polylineProps.mockClear()
+    render(
+      <RouteLayer
+        {...makeRoute({
+          waypoints: [
+            { id: 'w1', ...path[0] },
+            { id: 'w2', ...path[1] },
+          ],
+          path,
+        })}
+      />,
+    )
+
+    // The casing is drawn wider than the core, so an interactive casing would
+    // reintroduce exactly the touch bug `interactive={false}` exists to fix:
+    // a large tap target lying under every waypoint.
+    expect(screen.getAllByTestId('polyline')).toHaveLength(2)
+    for (const call of polylineProps.mock.calls) {
+      expect(call[0]).toMatchObject({ interactive: false })
+    }
   })
 
   it('leaves the markers it already drew alone when a waypoint is added', () => {
@@ -125,32 +168,6 @@ describe('RouteLayer', () => {
     expect(circleMarkerProps).toHaveBeenCalledWith(
       expect.objectContaining({ center: [40.41, -3.71] }),
     )
-  })
-
-  it('shows routing feedback while a segment is in flight', () => {
-    render(<RouteLayer {...makeRoute({ isRouting: true })} />)
-
-    expect(screen.getByText(/routing/i)).toBeInTheDocument()
-  })
-
-  it('shows an error message when routing fails', () => {
-    render(<RouteLayer {...makeRoute({ error: 'Could not find a route to that point.' })} />)
-
-    expect(screen.getByText(/could not find a route/i)).toBeInTheDocument()
-  })
-
-  it('keeps the same live region mounted from the start, so updates are announced', () => {
-    const { rerender } = render(<RouteLayer {...makeRoute()} />)
-    const region = screen.getByRole('status')
-    expect(region).toBeEmptyDOMElement()
-
-    rerender(<RouteLayer {...makeRoute({ isRouting: true })} />)
-    expect(screen.getByRole('status')).toBe(region)
-    expect(region).toHaveTextContent(/routing/i)
-
-    rerender(<RouteLayer {...makeRoute({ error: 'Could not find a route.' })} />)
-    expect(screen.getByRole('status')).toBe(region)
-    expect(region).toHaveTextContent(/could not find a route/i)
   })
 
   describe('waypoint size by pointer', () => {
@@ -188,7 +205,20 @@ describe('RouteLayer', () => {
     it('draws the smaller waypoint when the pointer is a mouse', () => {
       render(<RouteLayer {...makeRoute({ waypoints: [w1] })} />)
 
-      expect(circleMarkerProps.mock.calls.at(-1)![0].radius).toBe(6)
+      expect(circleMarkerProps.mock.calls.at(-1)![0].radius).toBe(7)
+    })
+
+    it('draws the marked waypoint larger than the rest, whatever the pointer', async () => {
+      const user = userEvent.setup()
+      render(<RouteLayer {...makeRoute({ waypoints: [w1, { id: 'w2', lat: 40.41, lng: -3.71 }] })} />)
+      const resting = circleMarkerProps.mock.calls.at(-1)![0].radius
+
+      await user.click(screen.getAllByTestId('circle-marker')[0])
+
+      // Colour alone has to compete with a route line drawn in the same
+      // weight class; size is the difference that survives a glance (FR-014).
+      const marked = circleMarkerProps.mock.calls.at(-1)![0].radius
+      expect(marked).toBeGreaterThan(resting)
     })
 
   })

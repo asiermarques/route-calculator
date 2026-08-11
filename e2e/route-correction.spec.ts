@@ -102,7 +102,7 @@ test('clearing the route leaves the map centred and zoomed where it was', async 
   await supplyCredentials(page)
   await expect.poll(() => tiles.length, { timeout: 5000 }).toBeGreaterThan(0)
 
-  await page.click('.leaflet-control-zoom-in')
+  await page.getByRole('button', { name: /zoom in/i }).click()
   await expect.poll(() => tiles.some((t) => t.z === 14), { timeout: 5000 }).toBe(true)
   await page.waitForTimeout(300)
 

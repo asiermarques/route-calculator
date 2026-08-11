@@ -1,0 +1,45 @@
+/* The bottom half of the shell. Same panel as the header, same phone-first
+ * behaviour: one row while the controls fit side by side, wrapping to two when
+ * they don't. */
+.footer {
+  position: absolute;
+  /* Clears Leaflet's attribution strip along the very bottom, which is all it
+   * has to clear: zooming is one of the controls in here (`ZoomControls`),
+   * not a widget in the corner to leave room for. */
+  bottom: var(--space-map-bottom);
+  left: var(--space-lg);
+  right: var(--space-lg);
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  animation: footerIn 460ms cubic-bezier(0.2, 0.9, 0.2, 1) 120ms both;
+}
+
+.add,
+.corrections {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+@keyframes footerIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer {
+    animation: none;
+  }
+}

@@ -1,8 +1,12 @@
 import { MapView } from './shared/map/MapView'
+import { ZoomControls } from './shared/map/ZoomControls'
+import { AppHeader } from './shared/layout/AppHeader'
+import { AppFooter } from './shared/layout/AppFooter'
 import { AddressSearchBar } from './address-search/AddressSearchBar'
 import { RouteLayer } from './route-drawing/RouteLayer'
 import { AddWaypointControl } from './route-drawing/AddWaypointControl'
 import { DistanceReadout } from './route-drawing/DistanceReadout'
+import { RoutingStatus } from './route-drawing/RoutingStatus'
 import { useRoute } from './route-drawing/useRoute'
 import { RouteControls } from './route-correction/RouteControls'
 import { useCredentials } from './credentials/useCredentials'
@@ -17,32 +21,42 @@ type RoutePlannerProps = {
 
 /** Composes the map with every slice that draws or corrects a route. The
  * route state lives here, in `useRoute`, and is passed down as props — the
- * route-drawing and route-correction slices don't import each other. */
+ * route-drawing and route-correction slices don't import each other.
+ *
+ * The two bars are the same arrangement: `AppHeader` and `AppFooter` are
+ * shells that know where a control goes, and this is the only place that knows
+ * which slice each of them comes from. */
 function RoutePlanner({ routingProvider, onReopenCredentials }: RoutePlannerProps) {
   const route = useRoute(routingProvider)
   const hasWaypoints = route.waypoints.length > 0
 
   return (
     <MapView>
-      <AddressSearchBar />
+      <AppHeader
+        search={<AddressSearchBar />}
+        readout={<DistanceReadout distanceMeters={route.distanceMeters} />}
+        actions={<ReopenCredentialsButton onClick={onReopenCredentials} />}
+      />
       <RouteLayer
         waypoints={route.waypoints}
         path={route.path}
-        isRouting={route.isRouting}
-        error={route.error}
         onAddWaypoint={route.addWaypoint}
         onDeleteWaypoint={route.deleteWaypoint}
         onMoveWaypoint={route.moveWaypoint}
       />
-      <AddWaypointControl onAddWaypoint={route.addWaypoint} />
-      <DistanceReadout distanceMeters={route.distanceMeters} />
-      <RouteControls
-        canUndo={hasWaypoints}
-        canClear={hasWaypoints}
-        onUndo={route.undo}
-        onClear={route.clear}
+      <AppFooter
+        add={<AddWaypointControl onAddWaypoint={route.addWaypoint} />}
+        corrections={
+          <RouteControls
+            canUndo={hasWaypoints}
+            canClear={hasWaypoints}
+            onUndo={route.undo}
+            onClear={route.clear}
+          />
+        }
+        status={<RoutingStatus isRouting={route.isRouting} error={route.error} />}
+        zoom={<ZoomControls />}
       />
-      <ReopenCredentialsButton onClick={onReopenCredentials} />
     </MapView>
   )
 }
