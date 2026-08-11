@@ -1,0 +1,47 @@
+# Netlify deployment for the static build. There is no backend and no
+# build-time configuration: the build takes no environment variables, and each
+# visitor supplies their own routing key at runtime (docs/adr/0001-...).
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # package.json engines: ^20.19.0 || >=22.12.0. Pinned so a change to
+  # Netlify's default image cannot silently move the build off a supported
+  # runtime.
+  NODE_VERSION = "22"
+
+# The app's real Content-Security-Policy ships inside dist/index.html as a
+# <meta> tag generated from src/shared/net/outboundOrigins.ts. It is
+# deliberately NOT repeated here: a second copy of that policy would drift from
+# the generated one, and a browser enforces every policy it is given, so the
+# looser copy would be the one that matters for anything it forgot to name.
+#
+# frame-ancestors is the one directive a <meta> policy cannot carry — the
+# browser ignores it there — so it is sent as a header. Multiple policies are
+# enforced as their intersection, so this header only ever tightens the
+# generated one.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "frame-ancestors 'none'"
+    X-Content-Type-Options = "nosniff"
+    # NOT no-referrer: a browser cannot set a custom User-Agent, so the page's
+    # referrer is what identifies this app to Nominatim, whose usage policy
+    # requires it. This value still sends the origin cross-origin.
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Vite emits content-hashed filenames under /assets, so they are immutable.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Self-hosted typefaces (public/fonts/, src/shared/design/fonts.css) — copied
+# verbatim, so these names are not hashed and get a plain long max-age rather
+# than immutable.
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
