@@ -13,7 +13,7 @@ test('undo and clear are inert on an empty route', async ({ page }) => {
   await page.goto('/')
   await supplyCredentials(page)
 
-  await expect(page.getByRole('button', { name: /undo/i })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /remove last waypoint/i })).toBeDisabled()
   await expect(page.getByRole('button', { name: /clear/i })).toBeDisabled()
 })
 
@@ -32,7 +32,7 @@ test('undo removes the last waypoint and its incoming segment, dropping the dist
   await page.mouse.click(box.x + box.width * 0.7, box.y + box.height * 0.3)
   await expect(page.getByText('1.5 km')).toBeVisible()
 
-  await page.getByRole('button', { name: /undo/i }).click()
+  await page.getByRole('button', { name: /remove last waypoint/i }).click()
 
   await expect(page.getByText('1.0 km')).toBeVisible()
 })
@@ -48,13 +48,13 @@ test('repeated undo walks the route back to empty, disabling the control', async
   await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5)
   await expect(page.getByText('1.0 km')).toBeVisible()
 
-  await page.getByRole('button', { name: /undo/i }).click()
+  await page.getByRole('button', { name: /remove last waypoint/i }).click()
   await expect(page.getByText('0 km')).toBeVisible()
-  await expect(page.getByRole('button', { name: /undo/i })).toBeEnabled()
+  await expect(page.getByRole('button', { name: /remove last waypoint/i })).toBeEnabled()
 
-  await page.getByRole('button', { name: /undo/i }).click()
+  await page.getByRole('button', { name: /remove last waypoint/i }).click()
   await expect(page.getByText('0 km')).toBeVisible()
-  await expect(page.getByRole('button', { name: /undo/i })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /remove last waypoint/i })).toBeDisabled()
 })
 
 test('clear empties the whole route in one action and resets the distance', async ({ page }) => {

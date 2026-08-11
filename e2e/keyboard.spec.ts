@@ -93,7 +93,7 @@ test('undo and clear are reachable and operable from the keyboard', async ({ pag
   await page.keyboard.press('Enter')
   await expect(page.getByText('1.4 km')).toBeVisible()
 
-  await page.getByRole('button', { name: /^undo$/i }).focus()
+  await page.getByRole('button', { name: /remove last waypoint/i }).focus()
   await page.keyboard.press('Enter')
   await expect(page.getByText('0 km')).toBeVisible()
 

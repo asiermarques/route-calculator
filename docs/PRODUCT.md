@@ -36,7 +36,15 @@ tracking.
 - Address search that centres the map.
 - Click-to-add waypoints with street snapping.
 - Live total distance in kilometres.
-- Undo last waypoint, clear the whole route.
+- Remove the last waypoint, clear the whole route.
+- Delete any single waypoint, wherever it sits in the route — its neighbours
+  re-join with one newly routed segment, and the rest of the route survives
+  (`004-waypoint-edit-affordances`, superseding `001`'s "undo the last
+  waypoint or start over" as the only correction).
+- Move a single waypoint to a new spot without redrawing the route around it —
+  the segments on either side follow the streets to its new position, and its
+  place in the route order is unchanged (`004-waypoint-edit-affordances`,
+  reversing `001` NOGOAL-004's deferral of repositioning).
 - On a public deploy, a screen for the visitor's own routing-provider choice
   and API key — not stored, not sent anywhere but that provider — asked once
   per visit and reachable again at any time from within the app, to correct

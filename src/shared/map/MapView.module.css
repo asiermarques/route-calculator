@@ -4,3 +4,16 @@
   width: 100%;
   height: 100%;
 }
+
+/* A click on the map places a waypoint there (FR-001, docs/DESIGN.md). Beats
+ * Leaflet's own cursor rules — `grab` on this element while idle, `grabbing`
+ * on `<body>` while a drag is in progress — which would otherwise say "pan"
+ * instead. `!important` is the only override that doesn't depend on whichever
+ * stylesheet (ours or Leaflet's) happens to load last; panning itself is
+ * untouched, only the cursor changes. A waypoint marker overrides this back
+ * to a pointer via Leaflet's own `.leaflet-interactive` rule, which needs no
+ * help here: a rule that directly matches an element always wins over a
+ * cursor value inherited from an ancestor like this one. */
+.map:global(.leaflet-container) {
+  cursor: crosshair !important;
+}

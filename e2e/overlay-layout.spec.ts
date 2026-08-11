@@ -46,7 +46,7 @@ for (const viewport of VIEWPORTS) {
       ['distance', page.getByRole('status').filter({ hasText: /km/ })],
       ['routing status', page.getByRole('status').filter({ hasText: /could not find/i })],
       ['add waypoint', page.getByRole('button', { name: /add waypoint/i })],
-      ['undo', page.getByRole('button', { name: /^undo$/i })],
+      ['undo', page.getByRole('button', { name: /remove last waypoint/i })],
       ['clear', page.getByRole('button', { name: /^clear$/i })],
       ['zoom in', page.getByRole('button', { name: /zoom in/i })],
       ['zoom out', page.getByRole('button', { name: /zoom out/i })],

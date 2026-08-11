@@ -12,8 +12,12 @@ vi.mock('./address-search/AddressSearchBar', () => ({
   AddressSearchBar: () => <div data-testid="address-search-bar" />,
 }))
 
+const routeLayerProps = vi.fn()
 vi.mock('./route-drawing/RouteLayer', () => ({
-  RouteLayer: () => <div data-testid="route-layer" />,
+  RouteLayer: (props: Record<string, unknown>) => {
+    routeLayerProps(props)
+    return <div data-testid="route-layer" />
+  },
 }))
 
 vi.mock('./route-drawing/AddWaypointControl', () => ({
@@ -136,6 +140,8 @@ describe('App', () => {
       isRouting: false,
       error: null,
       addWaypoint: vi.fn(),
+      deleteWaypoint: vi.fn(),
+      moveWaypoint: vi.fn(),
       undo,
       clear,
     })
@@ -154,6 +160,32 @@ describe('App', () => {
     ]) {
       expect(screen.getByTestId('map-view')).toContainElement(screen.getByTestId(testId))
     }
+  })
+
+  it('wires per-waypoint delete and move through to the same route as map clicks (004)', () => {
+    useCredentials.mockReturnValue(
+      baseCredentials({ routingProvider: { getRoute: vi.fn() }, isCredentialsScreenOpen: false }),
+    )
+    const deleteWaypoint = vi.fn()
+    const moveWaypoint = vi.fn()
+    useRoute.mockReturnValue({
+      waypoints: [],
+      path: [],
+      distanceMeters: 0,
+      isRouting: false,
+      error: null,
+      addWaypoint: vi.fn(),
+      deleteWaypoint,
+      moveWaypoint,
+      undo,
+      clear,
+    })
+
+    render(<App />)
+
+    expect(routeLayerProps).toHaveBeenCalledWith(
+      expect.objectContaining({ onDeleteWaypoint: deleteWaypoint, onMoveWaypoint: moveWaypoint }),
+    )
   })
 
   it('disables undo and clear while the route is empty, and enables them once it has waypoints', () => {

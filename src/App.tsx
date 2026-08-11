@@ -31,6 +31,8 @@ function RoutePlanner({ routingProvider, onReopenCredentials }: RoutePlannerProp
         isRouting={route.isRouting}
         error={route.error}
         onAddWaypoint={route.addWaypoint}
+        onDeleteWaypoint={route.deleteWaypoint}
+        onMoveWaypoint={route.moveWaypoint}
       />
       <AddWaypointControl onAddWaypoint={route.addWaypoint} />
       <DistanceReadout distanceMeters={route.distanceMeters} />

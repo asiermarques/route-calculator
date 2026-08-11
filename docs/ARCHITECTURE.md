@@ -47,7 +47,20 @@ configuration, the routing provider interface) live in `src/shared/`. See
 Route state (waypoints, snapped segments, distance) is owned by one hook in
 `route-drawing` and passed down as props to the overlay controls in
 `route-correction` — slices don't import each other, so state that's shared
-across slices is lifted to `App.tsx`, which composes them.
+across slices is lifted to `App.tsx`, which composes them. Per-waypoint
+delete and move (`004-waypoint-edit-affordances`) extend that same hook
+(`useRoute`'s `deleteWaypoint`/`moveWaypoint`) rather than introducing a
+second owner of route state; both go through the hook's existing ordered
+queue, alongside waypoint additions, so an edit issued while an earlier
+segment is still routing can't land out of order. Which waypoint's options
+are open, and which one's move is armed, is UI-only interaction state kept in
+`RouteLayer` itself and derived against the current waypoint list on every
+render, rather than invalidated by hand when a waypoint disappears out from
+under it (cleared, undone, or deleted) — arming a move is this app's first
+"mode", and `RouteLayer` also gives it a cursor distinct from the map's
+otherwise-permanent crosshair by setting an inline style on the Leaflet
+container directly, the one override guaranteed to beat the crosshair's own
+CSS regardless of stylesheet load order (`docs/DESIGN.md`).
 
 Every overlay panel rendered inside the map (`src/shared/map/MapView`) uses
 `src/shared/map/useDisableMapClickPropagation`, so interacting with the panel

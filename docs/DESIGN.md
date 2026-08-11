@@ -23,6 +23,7 @@ values or bare pixel spacing in component styles.
 | `--color-shadow` | `rgba(0, 0, 0, 0.3)` | Overlay panel shadow. |
 | `--color-route` | `#1a73e8` | The drawn, snapped path. |
 | `--color-waypoint` | `#d93025` | Waypoint markers — distinct from the path (FR-005). |
+| `--color-waypoint-selected` | `#f9ab00` | The waypoint whose options are open or whose move is armed — distinct from both `--color-waypoint` and `--color-route` (FR-014). |
 | `--space-xs` | `0.4rem` | Tight internal padding. |
 | `--space-sm` | `0.5rem` | Default gap between controls. |
 | `--space-md` | `0.75rem` | Panel padding. |
@@ -81,3 +82,39 @@ values or bare pixel spacing in component styles.
   color from these same tokens via `var(--token-name)`, not a hex literal in
   the component — Leaflet's SVG renderer resolves CSS custom properties in
   path attributes the same as it would in a stylesheet.
+- **Cursor conveys what a click will do** (`004-waypoint-edit-affordances`).
+  Over the map background the cursor is a crosshair — a click places a
+  waypoint there — overriding Leaflet's own `grab`/`grabbing` cursor, which
+  otherwise implies the map is for panning first. This is a knowing trade: the
+  override uses `cursor: crosshair !important` on `.leaflet-container` in
+  `MapView.module.css`, the only reliable way to beat classes Leaflet itself
+  toggles (on the container while idle, on `<body>` while actively dragging)
+  regardless of stylesheet load order — panning itself is untouched, only the
+  cursor changes. Over a waypoint marker the cursor is a pointer instead
+  (Leaflet's own `.leaflet-interactive` rule already provides this — a rule
+  that directly matches an element always wins over an inherited value, so no
+  extra override is needed there). While a move is armed (US-004) the map
+  cursor is `move` instead of the crosshair, so it never promises a new
+  waypoint where the click will relocate one; `RouteLayer` sets this directly
+  on the Leaflet container via an inline style with `!important` priority —
+  the one thing guaranteed to beat the stylesheet's own `!important` crosshair
+  regardless of rule order. Cursor keywords are not colour or spacing values,
+  so they are not tokenised — this rule is their record. None of this exists
+  on touch, which has no cursor; there, the marked waypoint below is what
+  carries the same information.
+- **The marked waypoint** (`004-waypoint-edit-affordances`, FR-014) is the
+  waypoint whose options are open, or whose move is armed — styled with
+  `--color-waypoint-selected` instead of `--color-waypoint` so it reads
+  unambiguously even when two markers overlap, and so it can stand in for the
+  cursor rule above on touch, which has no hover or cursor at all.
+- **The waypoint options panel** (`004-waypoint-edit-affordances`) opens
+  anchored to the waypoint it belongs to — anchoring alone doesn't separate
+  two overlapping markers, which is what the marked waypoint above is for. It
+  positions itself on whichever side of the marker points back toward the
+  centre of the map (the half of the viewport the marker isn't in), so it
+  grows away from the edges every fixed overlay and Leaflet's own zoom/
+  attribution controls live along, rather than reaching toward them. Editing a
+  waypoint (opening its options, deleting it, arming and completing a move) is
+  pointer/touch-only by deliberate decision — undo and clear remain the
+  keyboard-reachable correction path (`AddWaypointControl`'s precedent does
+  not extend here).
