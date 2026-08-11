@@ -2,8 +2,8 @@ import type { RoutingProvider } from './types'
 import { OpenRouteServiceProvider } from './openRouteServiceProvider'
 import { MapboxDirectionsProvider } from './mapboxDirectionsProvider'
 
-const PROVIDER_NAMES = ['openrouteservice', 'mapbox'] as const
-type ProviderName = (typeof PROVIDER_NAMES)[number]
+export const PROVIDER_NAMES = ['openrouteservice', 'mapbox'] as const
+export type ProviderName = (typeof PROVIDER_NAMES)[number]
 
 export type RoutingEnv = {
   VITE_ROUTING_PROVIDER?: string

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { mockTiles } from './support/mock-tiles'
 import { mockRouting } from './support/mock-routing'
+import { supplyCredentials } from './support/supply-credentials'
 
 async function mapBox(page: import('@playwright/test').Page) {
   const map = page.locator('.leaflet-container')
@@ -10,6 +11,7 @@ async function mapBox(page: import('@playwright/test').Page) {
 test('undo and clear are inert on an empty route', async ({ page }) => {
   await mockTiles(page)
   await page.goto('/')
+  await supplyCredentials(page)
 
   await expect(page.getByRole('button', { name: /undo/i })).toBeDisabled()
   await expect(page.getByRole('button', { name: /clear/i })).toBeDisabled()
@@ -21,6 +23,7 @@ test('undo removes the last waypoint and its incoming segment, dropping the dist
   await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1000 }, { distanceMeters: 500 }])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3)
@@ -38,6 +41,7 @@ test('repeated undo walks the route back to empty, disabling the control', async
   await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1000 }])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3)
@@ -57,6 +61,7 @@ test('clear empties the whole route in one action and resets the distance', asyn
   await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1000 }, { distanceMeters: 500 }])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3)
@@ -76,6 +81,7 @@ test('a new route can be started right after clearing', async ({ page }) => {
   await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1000 }])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3)
@@ -93,6 +99,7 @@ test('clearing the route leaves the map centred and zoomed where it was', async 
   const tiles = await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1000 }])
   await page.goto('/')
+  await supplyCredentials(page)
   await expect.poll(() => tiles.length, { timeout: 5000 }).toBeGreaterThan(0)
 
   await page.click('.leaflet-control-zoom-in')

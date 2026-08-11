@@ -35,6 +35,7 @@ values or bare pixel spacing in component styles.
 | `--radius-lg` | `0.5rem` | Panels. |
 | `--font-ui` | `14px/1.4 system-ui, sans-serif` | All overlay UI text. |
 | `--z-overlay` | `1000` | Overlay controls above Leaflet's own panes. |
+| `--z-modal` | `1100` | The credentials screen when reopened over the running app — above every `--z-overlay` control, not just the map. |
 
 ## Rules
 
@@ -50,8 +51,17 @@ values or bare pixel spacing in component styles.
   `--space-map-bottom` is enough to clear the attribution. The current
   placement is: address search top-left, distance readout top-right,
   undo/clear bottom-right above Leaflet's controls, add-waypoint bottom-left,
-  routing status above everything else along the bottom. `e2e/overlay-layout.spec.ts`
+  routing status above everything else along the bottom, and "change routing
+  provider" stacked directly below the distance readout, in the same
+  top-right column — a single-glyph button no wider than the readout itself,
+  since anything wider there would reach into the gap the address bar's
+  `max-width` is computed to stop short of. `e2e/overlay-layout.spec.ts`
   asserts they stay apart at phone, tablet and desktop widths.
+- The credentials screen breaks the "everything lives inside the map" pattern
+  by design: on first load it *is* the whole page, since no map exists yet to
+  sit on top of. Reopened (US-005) it becomes a full-viewport modal over the
+  running app instead, on `--z-modal` — one level above `--z-overlay` — so it
+  sits above every overlay control, not only the map underneath them.
 - Dark mode / theming is out of scope for the first version — one palette,
   matching the product's "one screen, one job" principle. `src/index.css`
   therefore declares `color-scheme: light`: with `light dark`, the browser

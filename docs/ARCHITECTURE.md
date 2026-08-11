@@ -11,21 +11,31 @@ output is plain static files, deployable to any static host.
 - **React + TypeScript**, bundled with **Vite**.
 - **Leaflet** for the map, with raster tiles from OpenStreetMap.
 - **Nominatim** (OpenStreetMap) for address geocoding.
-- **Routing provider**: pluggable, selected by configuration. Two
-  implementations are supported:
+- **Routing provider**: pluggable. Two implementations are supported:
   - **Mapbox Directions**
   - **OpenRouteService**
 
   Both are accessed behind a single internal routing interface so the rest of
-  the app is unaware of which one is active. The active provider and its API
-  key come from build-time environment configuration.
+  the app is unaware of which one is active. In a production build, the
+  active provider and its API key are supplied at runtime by the visitor, on
+  a blocking credentials screen shown before anything else — a production
+  build ships with no key at all (`src/credentials/`,
+  `docs/adr/0001-user-supplied-routing-api-key-in-browser-storage.md`). That
+  screen is reachable again from within the running app, as a modal over the
+  still-mounted map, so a visitor can correct a mistyped key or a wrong
+  provider without a reload discarding the route they've drawn. In
+  development, `VITE_ROUTING_PROVIDER`/`VITE_ROUTING_API_KEY` from `.env`
+  seed the same state so `npm run dev` still needs no setup.
 
 ## State
 
 All application state is in memory in the browser. Nothing is persisted:
 no localStorage, no cookies, no server storage. Reloading the page discards
-the current route. This follows directly from the "no account, ephemeral
-session" product decision.
+the current route — and, in a production build, the routing credential the
+visitor supplied, which returns them to the credentials screen
+(`src/credentials/useCredentials.ts`). This follows directly from the
+"no account, ephemeral session" product decision, and the credential is
+treated as no exception to it (`docs/adr/0001-user-supplied-routing-api-key-in-browser-storage.md`).
 
 ## Code organisation
 
@@ -61,11 +71,16 @@ spacing values in component styles.
 
 ## Constraints and consequences
 
-- **API keys are public.** With no backend, any routing provider key ships in
-  the client bundle. Keys must be scoped to the minimum required and must not
-  have billing exposure beyond a capped free tier. **The two providers are not
-  equivalent here:** a Mapbox public (`pk.`) token can be restricted to the
-  deployed domain, so a stolen one is close to worthless; OpenRouteService
+- **API keys are public, wherever they come from.** With no backend, a
+  routing provider key can never be kept secret from the browser it runs in.
+  In development, `.env`'s key is local to that machine. In a production
+  build, no key ships in the bundle at all — each visitor supplies their own
+  at runtime, and it exists only in that visitor's browser tab for the
+  session (ADR 0001). Either way, whoever holds the key is responsible for
+  scoping it to the minimum required and keeping it off any tier with billing
+  exposure — the credentials screen tells visitors this. **The two providers
+  are not equivalent here:** a Mapbox public (`pk.`) token can be restricted
+  to the deployed domain, so a stolen one is close to worthless; OpenRouteService
   documents no domain or referrer restriction, so a stolen ORS key is usable
   from anywhere. See
   `docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`.

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { mockTiles } from './support/mock-tiles'
 import { mockRouting } from './support/mock-routing'
+import { supplyCredentials } from './support/supply-credentials'
 
 /** Every control sits on top of the map, absolutely positioned, so nothing in
  * the layout stops two of them landing on the same pixels. A control drawn
@@ -30,6 +31,7 @@ for (const viewport of VIEWPORTS) {
     await mockTiles(page)
     await mockRouting(page, ['error'])
     await page.goto('/')
+    await supplyCredentials(page)
 
     // Provoke the widest overlay state: the routing error panel, on screen at
     // the same time as every other control.
@@ -49,6 +51,7 @@ for (const viewport of VIEWPORTS) {
       ['zoom in', page.getByRole('button', { name: /zoom in/i })],
       ['zoom out', page.getByRole('button', { name: /zoom out/i })],
       ['attribution', page.locator('.leaflet-control-attribution')],
+      ['change routing provider', page.getByRole('button', { name: /change routing provider/i })],
     ] as const) {
       const box = await locator.boundingBox()
       expect(box, `${name} should be laid out`).not.toBeNull()

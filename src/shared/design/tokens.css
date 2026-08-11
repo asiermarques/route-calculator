@@ -28,4 +28,5 @@
   --font-ui: 14px/1.4 system-ui, sans-serif;
 
   --z-overlay: 1000;
+  --z-modal: 1100;
 }

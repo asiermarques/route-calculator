@@ -4,9 +4,14 @@ A simple web app to draw a route on a map and know how many kilometres it is.
 Search for an address, click along the map to build a route, and see the
 distance update live. No account, nothing saved — see `docs/PRODUCT.md`.
 
-Status: **All 3 slices shipped** — map and address search, route drawing with
-live distance, and undo/clear (see
-`.workflow/implementation-plans/001-map-route-drawing.md`).
+Status: **Map and route drawing shipped** — address search, route drawing
+with live distance, and undo/clear (see
+`.workflow/implementation-plans/001-map-route-drawing.md`) — **plus
+runtime routing credentials**: a production build ships with no routing API
+key, asks each visitor for their own on a blocking credentials screen, and
+that screen is reachable again from within the app to correct a mistyped key
+or a wrong provider, no reload needed (see
+`.workflow/implementation-plans/002-visitor-routing-key-entry.md`).
 
 ## Quick start
 
@@ -17,8 +22,10 @@ npm run dev             # http://localhost:5173
 ```
 
 The map (OpenStreetMap tiles) and address search (Nominatim) work with no API
-key. Drawing a route needs a routing-provider API key — the app fails clearly
-at startup if it's missing or misconfigured.
+key. `.env` supplies a routing-provider key for local development only, so
+`npm run dev` comes up straight into the map. Without it, `npm run dev` shows
+the same credentials screen a production build shows every visitor — see
+below.
 
 ## Testing
 
@@ -32,17 +39,31 @@ npm run e2e         # end-to-end tests (Playwright, against the build)
 Both suites run fully offline: third-party requests (map tiles, Nominatim,
 and the routing provider) are intercepted with fixture responses, so nothing
 here depends on live third-party availability or quota. `npm run build`
-needs `VITE_ROUTING_PROVIDER` and `VITE_ROUTING_API_KEY` set in the
-environment (any non-empty key works — the e2e suite mocks the routing
-provider's network calls, it never reaches the real service). See
-`CLAUDE.md` for the full testing conventions.
+needs no environment variables — a production build never embeds a routing
+API key. The e2e suite supplies a throwaway key through the credentials
+screen itself, the way a real visitor would (`e2e/support/supply-credentials.ts`).
+See `CLAUDE.md` for the full testing conventions.
 
 ## Configuration and API keys
 
-Drawing a route needs a routing-provider API key, set via build-time
-environment variables (`VITE_ROUTING_PROVIDER`, `VITE_ROUTING_API_KEY` — see
-`.env.example`). `VITE_ROUTING_PROVIDER` is one of `openrouteservice` or
-`mapbox`; switching provider is a configuration change only.
+Drawing a route needs a routing-provider API key. Where it comes from depends
+on the build:
+
+- **Production build (`npm run build`)** — no key is ever embedded. The app
+  opens on a credentials screen; the visitor picks a provider and pastes
+  their own key, which is held in memory for that browser tab only, sent only
+  to the chosen provider, and gone on reload. The screen carries the same
+  how-to-get-a-key guidance below, inline, so a first-time visitor never has
+  to leave the page for it. The 🔑 button next to the distance readout
+  reopens the screen at any time — to fix a mistyped key or switch provider —
+  without reloading or losing the drawn route. See
+  `docs/adr/0001-user-supplied-routing-api-key-in-browser-storage.md`.
+- **Local development (`npm run dev`)** — `.env`'s `VITE_ROUTING_PROVIDER`
+  and `VITE_ROUTING_API_KEY` (see `.env.example`) seed the same state, so the
+  screen doesn't block. Leave them unset to develop against the screen
+  itself.
+
+`VITE_ROUTING_PROVIDER` is one of `openrouteservice` or `mapbox`.
 
 - **OpenRouteService** (`openrouteservice`) — free tier, no credit card.
   1. Create an account at <https://openrouteservice.org/dev/#/signup>.
@@ -58,8 +79,8 @@ environment variables (`VITE_ROUTING_PROVIDER`, `VITE_ROUTING_API_KEY` — see
      <https://account.mapbox.com/access-tokens/>, or create a scoped one with
      only the Directions API enabled.
 
-Because this app has no backend, whichever key you use ships inside the
-client bundle and is publicly visible. Before deploying anywhere public:
+A routing-provider key can never be kept secret from the browser it runs in,
+regardless of who typed it in. Whoever holds one should:
 
 - **Restrict the key** to your deployed domain where the provider supports it.
   Mapbox does: use a public `pk.` token and set its allowed URLs from the
@@ -70,8 +91,8 @@ client bundle and is publicly visible. Before deploying anywhere public:
   `docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`.
 - **Never use a key with billing exposure** beyond its free tier.
 
-If `VITE_ROUTING_PROVIDER` names an unknown provider, or `VITE_ROUTING_API_KEY`
-is unset, the app shows a clear startup error instead of the map.
+A key the provider rejects isn't checked at entry time — it surfaces the same
+way any other routing failure does, the next time a segment is routed.
 
 ## Documentation
 

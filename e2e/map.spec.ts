@@ -1,11 +1,13 @@
 import { expect, test } from '@playwright/test'
 import { mockTiles } from './support/mock-tiles'
+import { supplyCredentials } from './support/supply-credentials'
 
 const DEFAULT_ZOOM = 13
 
 test('the map fills the viewport with OpenStreetMap attribution on load', async ({ page }) => {
   await mockTiles(page)
   await page.goto('/')
+  await supplyCredentials(page)
 
   const map = page.locator('.leaflet-container')
   await expect(map).toBeVisible()
@@ -21,6 +23,7 @@ test('the map fills the viewport with OpenStreetMap attribution on load', async 
 test('dragging and zooming pans the view and loads new tiles', async ({ page }) => {
   const requests = await mockTiles(page)
   await page.goto('/')
+  await supplyCredentials(page)
   await expect.poll(() => requests.length, { timeout: 5000 }).toBeGreaterThan(0)
   const initialTiles = [...requests]
 
@@ -43,6 +46,7 @@ test('dragging and zooming pans the view and loads new tiles', async ({ page }) 
 test('reloading after panning returns to the default centre and zoom', async ({ page }) => {
   const requests = await mockTiles(page)
   await page.goto('/')
+  await supplyCredentials(page)
   await expect.poll(() => requests.length, { timeout: 5000 }).toBeGreaterThan(0)
 
   await page.click('.leaflet-control-zoom-in')
@@ -57,6 +61,7 @@ test('reloading after panning returns to the default centre and zoom', async ({ 
 
   requests.length = 0
   await page.reload()
+  await supplyCredentials(page)
   await expect
     .poll(() => requests.length, { timeout: 5000 })
     .toBeGreaterThan(0)

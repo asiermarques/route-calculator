@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { mockTiles } from './support/mock-tiles'
 import { mockRouting } from './support/mock-routing'
+import { supplyCredentials } from './support/supply-credentials'
 
 /** Drawing a route is a click-on-the-map gesture, which a keyboard cannot
  * perform. These specs cover the way round that: Leaflet's own keyboard pan
@@ -41,6 +42,7 @@ test('a route can be drawn end to end without ever using a pointer', async ({ pa
   await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1400 }])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const button = page.getByRole('button', { name: addWaypoint })
   await button.focus()
@@ -60,6 +62,7 @@ test('each keyboard waypoint lands wherever the map has been panned to', async (
   await mockTiles(page)
   const requests = await mockRouting(page, [{ distanceMeters: 1400 }])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const button = page.getByRole('button', { name: addWaypoint })
   await button.focus()
@@ -80,6 +83,7 @@ test('undo and clear are reachable and operable from the keyboard', async ({ pag
   await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1400 }])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const button = page.getByRole('button', { name: addWaypoint })
   await button.focus()
@@ -102,6 +106,7 @@ test('a focused control shows a visible focus ring', async ({ page }) => {
   await mockTiles(page)
   await mockRouting(page, [])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const button = page.getByRole('button', { name: addWaypoint })
   await button.focus()
@@ -119,6 +124,7 @@ test('the routing status region is present but shows no empty panel while idle',
   await mockTiles(page)
   await mockRouting(page, [])
   await page.goto('/')
+  await supplyCredentials(page)
 
   // It stays mounted so screen readers observe it from the start (RouteLayer),
   // but with nothing to say it must not paint a stray box over the map.

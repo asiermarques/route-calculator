@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { mockTiles } from './support/mock-tiles'
 import { mockNominatim } from './support/mock-nominatim'
+import { supplyCredentials } from './support/supply-credentials'
 
 test('submitting a matching address centres the map on it', async ({ page }) => {
   const tiles = await mockTiles(page)
@@ -10,6 +11,7 @@ test('submitting a matching address centres the map on it', async ({ page }) => 
     'Eiffel Tower, Paris': [{ lat: '48.8584', lon: '2.2945' }],
   })
   await page.goto('/')
+  await supplyCredentials(page)
   await expect.poll(() => tiles.length, { timeout: 5000 }).toBeGreaterThan(0)
   const tilesBefore = [...tiles]
 
@@ -29,6 +31,7 @@ test('submitting an address with no match shows a message and leaves the map unc
   await mockTiles(page)
   await mockNominatim(page, { nowhereatall: [] })
   await page.goto('/')
+  await supplyCredentials(page)
 
   await page.getByRole('textbox', { name: /address/i }).fill('nowhereatall')
   await page.getByRole('button', { name: /search/i }).click()
@@ -40,6 +43,7 @@ test('a geocoding failure shows an error message and leaves the map unchanged', 
   await mockTiles(page)
   await mockNominatim(page, { 'Puerta del Sol, Madrid': 'error' })
   await page.goto('/')
+  await supplyCredentials(page)
 
   await page.getByRole('textbox', { name: /address/i }).fill('Puerta del Sol, Madrid')
   await page.getByRole('button', { name: /search/i }).click()
@@ -51,6 +55,7 @@ test('typing quickly does not send a geocoding request per keystroke', async ({ 
   await mockTiles(page)
   const queries = await mockNominatim(page, {})
   await page.goto('/')
+  await supplyCredentials(page)
 
   await page.getByRole('textbox', { name: /address/i }).pressSequentially('Puerta del Sol', {
     delay: 10,

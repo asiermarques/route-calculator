@@ -18,6 +18,10 @@ Vertical slices by feature under `src/`:
 - `src/address-search/` — the address search bar and Nominatim client.
 - `src/route-drawing/` — waypoints, snapped segments, distance (later slices).
 - `src/route-correction/` — undo/clear (later slice).
+- `src/credentials/` — the credentials screen and the in-memory routing
+  credential state (`useCredentials`) that gates the app in a production
+  build. See
+  `docs/adr/0001-user-supplied-routing-api-key-in-browser-storage.md`.
 
 Each slice owns its own components, hooks, service calls, and tests. A slice
 may import from `src/shared/`; slices do not import from each other.
@@ -46,10 +50,15 @@ values outside tokens.
 
 ## Configuration
 
-Build-time environment variables (Vite `import.meta.env`), documented in
-`.env.example`. Never commit real API keys. Provider keys are public once
-bundled — see `docs/ARCHITECTURE.md` for the constraints that follow from
-that.
+The routing provider and its API key are supplied by the visitor at runtime,
+via the credentials screen (`src/credentials/`) — a production build embeds
+no key. `VITE_ROUTING_PROVIDER`/`VITE_ROUTING_API_KEY` (Vite
+`import.meta.env`, documented in `.env.example`) are a **development-only**
+convenience that seeds the same state so `npm run dev` doesn't block on the
+screen; they have no effect on a production build even if set at build time.
+Never commit real API keys. See `docs/ARCHITECTURE.md` for the constraints
+that follow from a key that can never be kept secret from the browser it
+runs in.
 
 ## Prohibited patterns
 

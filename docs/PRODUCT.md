@@ -18,11 +18,18 @@ tracking.
 ## Product principles
 
 - **Simple over complete.** One screen, one job: draw and measure.
-- **No account, no friction.** The app is usable the moment it loads.
+- **No account, no friction — after one step on a public deploy.** The app
+  itself has no login, ever. A build you run locally is usable the moment it
+  loads, exactly as before. A build deployed for other people to use asks each
+  visitor, once per visit, for their own routing-provider key — the app
+  doesn't have a backend to pay for everyone's routing, so it doesn't hold
+  one — and then behaves identically to the local case. See
+  `docs/adr/0001-user-supplied-routing-api-key-in-browser-storage.md`.
 - **Real-world distances.** Segments follow streets and paths, not straight
   lines, so the kilometre figure is trustworthy.
 - **Open data first.** Map tiles and address search come from OpenStreetMap
-  data; routing uses a third-party provider chosen by configuration.
+  data; routing uses a third-party provider the visitor (or, locally, `.env`)
+  chooses.
 
 ## In scope
 
@@ -30,6 +37,10 @@ tracking.
 - Click-to-add waypoints with street snapping.
 - Live total distance in kilometres.
 - Undo last waypoint, clear the whole route.
+- On a public deploy, a screen for the visitor's own routing-provider choice
+  and API key — not stored, not sent anywhere but that provider — asked once
+  per visit and reachable again at any time from within the app, to correct
+  a mistyped key or a wrong provider without losing the drawn route.
 
 ## Explicit non-goals
 

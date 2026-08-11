@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { mockTiles } from './support/mock-tiles'
 import { mockRouting } from './support/mock-routing'
+import { supplyCredentials } from './support/supply-credentials'
 
 async function mapBox(page: import('@playwright/test').Page) {
   const map = page.locator('.leaflet-container')
@@ -11,6 +12,7 @@ test('a single click places a waypoint and draws no path', async ({ page }) => {
   await mockTiles(page)
   await mockRouting(page, [])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.4)
@@ -24,6 +26,7 @@ test('a second click on a routable street draws a snapped path and updates the d
   await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1200 }])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.4)
@@ -39,6 +42,7 @@ test('a further click appends a new segment to the end of the route', async ({ p
   await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1000 }, { distanceMeters: 500 }])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3)
@@ -55,6 +59,7 @@ test('clicking somewhere no route can reach shows an error and leaves the route 
   await mockTiles(page)
   await mockRouting(page, ['not-found'])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.4)
@@ -70,6 +75,7 @@ test('a routing provider outage shows an error and leaves the route unchanged', 
   await mockTiles(page)
   await mockRouting(page, ['error'])
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.4)
@@ -101,6 +107,7 @@ test('a slow routing response shows in-progress feedback instead of looking like
     })
   })
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = (await map.boundingBox())!
   await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.4)
@@ -137,6 +144,7 @@ test('clicking two points in quick succession draws the route in click order reg
     })
   })
   await page.goto('/')
+  await supplyCredentials(page)
 
   const box = await mapBox(page)
   await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3)
