@@ -7,6 +7,7 @@
   --color-accent: #1a73e8;
   --color-accent-text: #ffffff;
   --color-error: #b3261e;
+  --color-focus: #0b57d0;
   --color-shadow: rgba(0, 0, 0, 0.3);
   --color-route: #1a73e8;
   --color-waypoint: #d93025;
@@ -18,6 +19,11 @@
 
   --radius: 0.25rem;
   --radius-lg: 0.5rem;
+
+  --size-control-row: 2.25rem;
+  --size-readout-column: 6rem;
+  --space-map-bottom: 2.5rem;
+  --space-map-bottom-right: 6rem;
 
   --font-ui: 14px/1.4 system-ui, sans-serif;
 

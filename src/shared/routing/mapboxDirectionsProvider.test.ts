@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MapboxDirectionsProvider } from './mapboxDirectionsProvider'
+import { rejectionOf } from '../../test/rejectionOf'
 
 const FROM = { lat: 40.4168, lng: -3.7038 }
 const TO = { lat: 40.42, lng: -3.7 }
@@ -71,5 +72,43 @@ describe('MapboxDirectionsProvider', () => {
     const provider = new MapboxDirectionsProvider('test-token')
 
     await expect(provider.getRoute(FROM, TO)).rejects.toThrow()
+  })
+
+  it.each([
+    ['a distance that is not a number', { routes: [{ geometry: { coordinates: [[-3.7, 40.4]] } }] }],
+    ['a missing geometry', { routes: [{ distance: 542 }] }],
+    ['an empty geometry', { routes: [{ geometry: { coordinates: [] }, distance: 542 }] }],
+    [
+      'a coordinate out of range',
+      { routes: [{ geometry: { coordinates: [[-3.7, 400]] }, distance: 542 }] },
+    ],
+  ])('throws rather than returning an unusable segment: %s', async (_label, body) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })),
+    )
+    const provider = new MapboxDirectionsProvider('test-token')
+
+    await expect(provider.getRoute(FROM, TO)).rejects.toThrow()
+  })
+
+  it('bounds the request, so an unanswered route cannot wedge the routing queue', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(directionsResponse([[-3.7038, 40.4168]], 0))
+    vi.stubGlobal('fetch', fetchMock)
+    const provider = new MapboxDirectionsProvider('test-token')
+
+    await provider.getRoute(FROM, TO)
+
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
+  })
+
+  it('never puts the access token in the error it throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 401 })))
+    const provider = new MapboxDirectionsProvider('test-token')
+
+    const error = await rejectionOf(provider.getRoute(FROM, TO))
+
+    expect(error.message).not.toContain('test-token')
+    expect(error.message).not.toContain('api.mapbox.com')
   })
 })

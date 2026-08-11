@@ -1,17 +1,27 @@
 .status {
   position: absolute;
-  bottom: var(--space-lg);
+  /* Above every other bottom overlay, including undo/clear in the opposite
+   * corner: at phone widths an error message is wide enough to reach across
+   * and cover them. */
+  bottom: calc(var(--space-map-bottom-right) + var(--size-control-row) + var(--space-sm));
   left: var(--space-lg);
+  max-width: min(28rem, calc(100% - var(--space-lg) * 2));
   z-index: var(--z-overlay);
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  font: var(--font-ui);
+  color: var(--color-text);
+}
+
+/* The panel itself only exists when there is something in it. The element
+ * stays mounted either way so it can serve as a live region (RouteLayer.tsx);
+ * with no children it has no box, no background and no size. */
+.status:not(:empty) {
   background: var(--color-surface);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-lg);
   box-shadow: 0 1px 4px var(--color-shadow);
-  font: var(--font-ui);
-  color: var(--color-text);
 }
 
 .error {

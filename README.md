@@ -61,8 +61,13 @@ environment variables (`VITE_ROUTING_PROVIDER`, `VITE_ROUTING_API_KEY` — see
 Because this app has no backend, whichever key you use ships inside the
 client bundle and is publicly visible. Before deploying anywhere public:
 
-- **Restrict the key** to your deployed domain (URL/referrer restriction —
-  both providers support this from their dashboard).
+- **Restrict the key** to your deployed domain where the provider supports it.
+  Mapbox does: use a public `pk.` token and set its allowed URLs from the
+  dashboard. **OpenRouteService does not** — its key is a plain bearer
+  credential, usable from anywhere once leaked, and repeated abuse can get the
+  account blocked. Prefer Mapbox for anything publicly reachable; ORS is fine
+  for local or single-operator use. See
+  `docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`.
 - **Never use a key with billing exposure** beyond its free tier.
 
 If `VITE_ROUTING_PROVIDER` names an unknown provider, or `VITE_ROUTING_API_KEY`

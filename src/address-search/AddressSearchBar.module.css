@@ -2,6 +2,9 @@
   position: absolute;
   top: var(--space-lg);
   left: var(--space-lg);
+  /* Stops short of the distance readout in the opposite corner: unbounded,
+   * the bar reaches under it at phone widths and buries the submit button. */
+  max-width: calc(100% - var(--space-lg) * 3 - var(--size-readout-column));
   z-index: var(--z-overlay);
   display: flex;
   flex-wrap: wrap;
@@ -15,20 +18,16 @@
   color: var(--color-text);
 }
 
-.label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 .input {
-  min-width: 14rem;
+  flex: 1 1 10rem;
+  min-width: 0;
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  /* Explicit, so the field never picks its colours up from the OS theme while
+   * the panel around it stays on the light palette. */
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .button {

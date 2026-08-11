@@ -62,14 +62,30 @@ spacing values in component styles.
 ## Constraints and consequences
 
 - **API keys are public.** With no backend, any routing provider key ships in
-  the client bundle. Keys must be restricted by HTTP referrer/domain and scoped
-  to the minimum required, and must not be keys with billing exposure beyond a
-  capped free tier.
+  the client bundle. Keys must be scoped to the minimum required and must not
+  have billing exposure beyond a capped free tier. **The two providers are not
+  equivalent here:** a Mapbox public (`pk.`) token can be restricted to the
+  deployed domain, so a stolen one is close to worthless; OpenRouteService
+  documents no domain or referrer restriction, so a stolen ORS key is usable
+  from anywhere. See
+  `docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`.
 - **Third-party rate limits apply.** Nominatim's usage policy requires a
   reasonable request rate; address search must be debounced and must not be
-  called per keystroke without throttling.
+  called per keystroke without throttling. An empty query is not sent at all.
 - **Availability is external.** Geocoding and routing failures are normal
   operating conditions, not exceptions, and must be surfaced to the user
-  rather than swallowed.
-- **No server-side validation exists.** There is no trust boundary to defend
-  because there is no shared data and no other users' data to isolate.
+  rather than swallowed. That includes a service that accepts a connection and
+  then never answers: every third-party call goes through
+  `src/shared/http/fetchWithTimeout.ts` and gives up rather than hanging, since
+  routing requests are queued and one that never settles would stop the queue.
+- **Third-party responses are the only untrusted input.** There is no
+  server-side validation because there is no shared data and no other users'
+  data to isolate — but the shapes coming back from Nominatim and the routing
+  providers are outside this app's control, and a missing or unparseable
+  coordinate would otherwise reach Leaflet as `NaN`. They are checked in
+  `src/shared/http/parse.ts` before use, and a bad shape takes the same path as
+  any other failed request.
+- **Nominatim identifies callers by `Referer`.** A browser cannot set a custom
+  `User-Agent`, so the page's referrer is what satisfies the usage policy. A
+  deployment that sends `Referrer-Policy: no-referrer` would break address
+  search.

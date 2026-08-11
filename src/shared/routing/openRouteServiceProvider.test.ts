@@ -70,4 +70,46 @@ describe('OpenRouteServiceProvider', () => {
 
     await expect(provider.getRoute(FROM, TO)).rejects.toThrow()
   })
+
+  it.each([
+    [
+      'a distance that is not a number',
+      { features: [{ geometry: { coordinates: [[-3.7, 40.4]] }, properties: { summary: {} } }] },
+    ],
+    ['a missing geometry', { features: [{ properties: { summary: { distance: 542 } } }] }],
+    [
+      'an empty geometry',
+      {
+        features: [
+          { geometry: { coordinates: [] }, properties: { summary: { distance: 542 } } },
+        ],
+      },
+    ],
+    [
+      'a coordinate out of range',
+      {
+        features: [
+          { geometry: { coordinates: [[-3.7, 400]] }, properties: { summary: { distance: 542 } } },
+        ],
+      },
+    ],
+  ])('throws rather than returning an unusable segment: %s', async (_label, body) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })),
+    )
+    const provider = new OpenRouteServiceProvider('test-key')
+
+    await expect(provider.getRoute(FROM, TO)).rejects.toThrow()
+  })
+
+  it('bounds the request, so an unanswered route cannot wedge the routing queue', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(geojsonResponse([[-3.7038, 40.4168]], 0))
+    vi.stubGlobal('fetch', fetchMock)
+    const provider = new OpenRouteServiceProvider('test-key')
+
+    await provider.getRoute(FROM, TO)
+
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
+  })
 })

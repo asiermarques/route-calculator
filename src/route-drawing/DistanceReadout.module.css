@@ -2,6 +2,9 @@
   position: absolute;
   top: var(--space-lg);
   right: var(--space-lg);
+  /* The width the address search bar is told to stop short of, so the two
+   * top corners cannot grow into each other. */
+  max-width: var(--size-readout-column);
   z-index: var(--z-overlay);
   background: var(--color-surface);
   padding: var(--space-sm) var(--space-md);

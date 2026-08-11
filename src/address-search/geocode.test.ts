@@ -55,4 +55,26 @@ describe('geocodeAddress', () => {
 
     await expect(geocodeAddress('anywhere')).rejects.toThrow()
   })
+
+  it.each([
+    ['a coordinate that is not a number', [{ lat: 'north-ish', lon: '-3.7038' }]],
+    ['a blank coordinate, which would read as 0', [{ lat: '', lon: '-3.7038' }]],
+    ['a missing coordinate', [{ lat: '40.4168' }]],
+  ])('throws rather than centring the map on nonsense: %s', async (_label, body) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })),
+    )
+
+    await expect(geocodeAddress('anywhere')).rejects.toThrow()
+  })
+
+  it('bounds the request, so an unanswered search cannot hang the form forever', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await geocodeAddress('anywhere')
+
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
+  })
 })

@@ -16,6 +16,14 @@ vi.mock('./route-drawing/RouteLayer', () => ({
   RouteLayer: () => <div data-testid="route-layer" />,
 }))
 
+vi.mock('./route-drawing/AddWaypointControl', () => ({
+  AddWaypointControl: ({ onAddWaypoint }: { onAddWaypoint: (point: unknown) => void }) => (
+    <button data-testid="add-waypoint-control" onClick={() => onAddWaypoint({ lat: 1, lng: 2 })}>
+      Add waypoint at map centre
+    </button>
+  ),
+}))
+
 vi.mock('./route-drawing/DistanceReadout', () => ({
   DistanceReadout: ({ distanceMeters }: { distanceMeters: number }) => (
     <div data-testid="distance-readout">{distanceMeters}</div>
@@ -75,7 +83,13 @@ describe('App', () => {
     render(<App />)
 
     expect(screen.getByTestId('map-view')).toBeInTheDocument()
-    for (const testId of ['address-search-bar', 'route-layer', 'distance-readout', 'route-controls']) {
+    for (const testId of [
+      'address-search-bar',
+      'route-layer',
+      'add-waypoint-control',
+      'distance-readout',
+      'route-controls',
+    ]) {
       expect(screen.getByTestId('map-view')).toContainElement(screen.getByTestId(testId))
     }
   })
@@ -119,6 +133,27 @@ describe('App', () => {
 
     expect(undo).toHaveBeenCalled()
     expect(clear).toHaveBeenCalled()
+  })
+
+  it('wires the keyboard waypoint control through to the same route as map clicks', async () => {
+    createRoutingProvider.mockReturnValue({ getRoute: vi.fn() })
+    const addWaypoint = vi.fn()
+    useRoute.mockReturnValue({
+      waypoints: [],
+      path: [],
+      distanceMeters: 0,
+      isRouting: false,
+      error: null,
+      addWaypoint,
+      undo,
+      clear,
+    })
+    const user = userEvent.setup()
+
+    render(<App />)
+    await user.click(screen.getByTestId('add-waypoint-control'))
+
+    expect(addWaypoint).toHaveBeenCalledWith({ lat: 1, lng: 2 })
   })
 
   it('shows a clear startup error instead of the map when the routing configuration is invalid', () => {

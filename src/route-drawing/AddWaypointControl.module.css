@@ -1,12 +1,10 @@
-.controls {
+.control {
   position: absolute;
-  /* Above Leaflet's own zoom control and attribution, which own this corner —
-   * a button drawn over "zoom out" is a button the user cannot press. */
-  bottom: var(--space-map-bottom-right);
-  right: var(--space-lg);
+  /* Bottom-left: the opposite corner already holds Leaflet's zoom control and
+   * attribution as well as undo/clear, with no room left for another row. */
+  bottom: var(--space-map-bottom);
+  left: var(--space-lg);
   z-index: var(--z-overlay);
-  display: flex;
-  gap: var(--space-sm);
 }
 
 .button {
@@ -17,10 +15,6 @@
   color: var(--color-text);
   box-shadow: 0 1px 4px var(--color-shadow);
   font: var(--font-ui);
+  white-space: nowrap;
   cursor: pointer;
-}
-
-.button:disabled {
-  opacity: 0.6;
-  cursor: default;
 }

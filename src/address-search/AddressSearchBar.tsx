@@ -3,9 +3,11 @@ import type { FormEvent } from 'react'
 import { useMap } from 'react-leaflet'
 import { geocodeAddress } from './geocode'
 import { useDisableMapClickPropagation } from '../shared/map/useDisableMapClickPropagation'
+import a11y from '../shared/design/a11y.module.css'
 import styles from './AddressSearchBar.module.css'
 
 const MATCH_ZOOM = 16
+const ERROR_ID = 'address-search-error'
 
 type Status = { kind: 'idle' } | { kind: 'searching' } | { kind: 'error'; message: string }
 
@@ -21,6 +23,11 @@ export function AddressSearchBar() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
+
+    // An empty submit has nothing to geocode, and Nominatim's usage policy
+    // asks for a reasonable request rate — don't spend a call on it.
+    if (query.trim() === '') return
+
     setStatus({ kind: 'searching' })
 
     try {
@@ -36,9 +43,11 @@ export function AddressSearchBar() {
     }
   }
 
+  const hasError = status.kind === 'error'
+
   return (
-    <form ref={formRef} className={styles.bar} onSubmit={handleSubmit}>
-      <label className={styles.label} htmlFor="address-search-input">
+    <form ref={formRef} className={styles.bar} onSubmit={handleSubmit} aria-label="Address search">
+      <label className={a11y.visuallyHidden} htmlFor="address-search-input">
         Address
       </label>
       <input
@@ -48,11 +57,23 @@ export function AddressSearchBar() {
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         placeholder="Search for an address"
+        aria-describedby={hasError ? ERROR_ID : undefined}
+        aria-invalid={hasError || undefined}
       />
       <button className={styles.button} type="submit" disabled={status.kind === 'searching'}>
         {status.kind === 'searching' ? 'Searching…' : 'Search'}
       </button>
-      {status.kind === 'error' && <p className={styles.message}>{status.message}</p>}
+      {/* Progress lives in a region that is always mounted, so a screen reader
+       * is already observing it when the search starts — the button's own
+       * label change would go unannounced, since it is disabled by then. */}
+      <p className={a11y.visuallyHidden} role="status">
+        {status.kind === 'searching' ? 'Searching for the address…' : ''}
+      </p>
+      {hasError && (
+        <p id={ERROR_ID} className={styles.message} role="alert">
+          {status.message}
+        </p>
+      )}
     </form>
   )
 }

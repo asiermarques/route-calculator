@@ -1,7 +1,10 @@
 @import './shared/design/tokens.css';
 
 :root {
-  color-scheme: light dark;
+  /* One palette, deliberately (docs/DESIGN.md). Declaring `light dark` would
+   * let the browser render form controls from the OS theme while every panel
+   * here stays on the light tokens — a dark input inside a white bar. */
+  color-scheme: light;
 }
 
 html,
@@ -9,4 +12,11 @@ body,
 #root {
   margin: 0;
   height: 100%;
+}
+
+/* One focus ring for the whole app, Leaflet's own controls included. Overlay
+ * panels sit on a busy map, so the keyboard position has to stay obvious. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }

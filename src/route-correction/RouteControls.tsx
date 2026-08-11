@@ -16,7 +16,7 @@ export function RouteControls({ canUndo, canClear, onUndo, onClear }: RouteContr
   const ref = useDisableMapClickPropagation<HTMLDivElement>()
 
   return (
-    <div ref={ref} className={styles.controls}>
+    <div ref={ref} className={styles.controls} role="group" aria-label="Route corrections">
       <button className={styles.button} type="button" onClick={onUndo} disabled={!canUndo}>
         Undo
       </button>

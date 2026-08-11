@@ -1,6 +1,7 @@
 import { MapView } from './shared/map/MapView'
 import { AddressSearchBar } from './address-search/AddressSearchBar'
 import { RouteLayer } from './route-drawing/RouteLayer'
+import { AddWaypointControl } from './route-drawing/AddWaypointControl'
 import { DistanceReadout } from './route-drawing/DistanceReadout'
 import { useRoute } from './route-drawing/useRoute'
 import { RouteControls } from './route-correction/RouteControls'
@@ -22,7 +23,14 @@ function RoutePlanner({ routingProvider }: RoutePlannerProps) {
   return (
     <MapView>
       <AddressSearchBar />
-      <RouteLayer route={route} />
+      <RouteLayer
+        waypoints={route.waypoints}
+        path={route.path}
+        isRouting={route.isRouting}
+        error={route.error}
+        onAddWaypoint={route.addWaypoint}
+      />
+      <AddWaypointControl onAddWaypoint={route.addWaypoint} />
       <DistanceReadout distanceMeters={route.distanceMeters} />
       <RouteControls
         canUndo={hasWaypoints}

@@ -1,8 +1,12 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
+  "plugins": ["react", "react-perf", "typescript", "oxc", "jsx-a11y"],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react/react-in-jsx-scope": "off",
+    "react-perf/jsx-no-new-object-as-prop": "error",
+    "react-perf/jsx-no-new-array-as-prop": "error",
+    "jsx-a11y/prefer-tag-over-role": "off"
   }
 }

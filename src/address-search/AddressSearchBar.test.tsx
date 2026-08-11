@@ -58,4 +58,50 @@ describe('AddressSearchBar', () => {
 
     expect(geocodeAddress).not.toHaveBeenCalled()
   })
+
+  it('spends no Nominatim call on an empty or blank query', async () => {
+    const user = userEvent.setup()
+    render(<AddressSearchBar />)
+
+    await user.click(screen.getByRole('button', { name: /search/i }))
+    await user.type(screen.getByRole('textbox', { name: /address/i }), '   ')
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(geocodeAddress).not.toHaveBeenCalled()
+  })
+
+  it('raises the failure as an alert, tied to the field it is about', async () => {
+    geocodeAddress.mockResolvedValue(null)
+    const user = userEvent.setup()
+    render(<AddressSearchBar />)
+    const input = screen.getByRole('textbox', { name: /address/i })
+
+    await user.type(input, 'nowhereatall')
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/not found/i)
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAccessibleDescription(/not found/i)
+  })
+
+  it('marks the field valid again, with nothing to announce, before it has failed', () => {
+    render(<AddressSearchBar />)
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /address/i })).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('announces that a search is under way, since the button goes quiet once disabled', async () => {
+    let settle!: (match: null) => void
+    geocodeAddress.mockImplementation(() => new Promise((resolve) => (settle = resolve)))
+    const user = userEvent.setup()
+    render(<AddressSearchBar />)
+
+    await user.type(screen.getByRole('textbox', { name: /address/i }), 'Puerta del Sol')
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(screen.getByRole('status')).toHaveTextContent(/searching/i)
+    settle(null)
+  })
 })

@@ -1,3 +1,6 @@
+import { fetchWithTimeout } from '../shared/http/fetchWithTimeout'
+import { requireFiniteNumber } from '../shared/http/parse'
+
 export type GeocodeMatch = {
   lat: number
   lon: number
@@ -18,15 +21,21 @@ export async function geocodeAddress(query: string): Promise<GeocodeMatch | null
   url.searchParams.set('format', 'jsonv2')
   url.searchParams.set('limit', '1')
 
-  const response = await fetch(url)
+  const response = await fetchWithTimeout(url)
   if (!response.ok) {
     throw new Error(`Nominatim request failed with status ${response.status}`)
   }
 
-  const results = (await response.json()) as Array<{ lat: string; lon: string }>
-  if (results.length === 0) {
+  const results = (await response.json()) as Array<{ lat?: unknown; lon?: unknown }>
+  if (!Array.isArray(results) || results.length === 0) {
     return null
   }
 
-  return { lat: Number(results[0].lat), lon: Number(results[0].lon) }
+  // Nominatim sends coordinates as strings. Unparseable ones would otherwise
+  // reach `map.setView` as NaN and break the map, so they fail as a request
+  // failure — the caller already tells that apart from "no match".
+  return {
+    lat: requireFiniteNumber(results[0].lat, 'Nominatim match latitude'),
+    lon: requireFiniteNumber(results[0].lon, 'Nominatim match longitude'),
+  }
 }
