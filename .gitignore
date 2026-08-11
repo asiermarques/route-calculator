@@ -1,5 +1,6 @@
 # Logs
 .workflow
+.claude
 logs
 *.log
 npm-debug.log*
