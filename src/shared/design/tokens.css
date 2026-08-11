@@ -1,0 +1,23 @@
+/* Design tokens — see docs/DESIGN.md. Loaded once globally; component CSS
+ * modules reference these instead of raw values. */
+:root {
+  --color-surface: #ffffff;
+  --color-text: #1a1a1a;
+  --color-border: #cccccc;
+  --color-accent: #1a73e8;
+  --color-accent-text: #ffffff;
+  --color-error: #b3261e;
+  --color-shadow: rgba(0, 0, 0, 0.3);
+
+  --space-xs: 0.4rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+
+  --radius: 0.25rem;
+  --radius-lg: 0.5rem;
+
+  --font-ui: 14px/1.4 system-ui, sans-serif;
+
+  --z-overlay: 1000;
+}
