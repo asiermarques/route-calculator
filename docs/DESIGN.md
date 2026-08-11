@@ -1,9 +1,9 @@
 # Design
 
 A minimal token set for a one-screen app: the map fills the viewport, and a
-small number of overlay controls (address search, later: distance readout,
-undo, clear) sit on top of it. Nothing here is more elaborate than that scope
-needs.
+small number of overlay controls (address search, distance readout, undo,
+clear) sit on top of it, plus the drawn route itself. Nothing here is more
+elaborate than that scope needs.
 
 ## Tokens
 
@@ -20,6 +20,8 @@ values or bare pixel spacing in component styles.
 | `--color-accent-text` | `#ffffff` | Text on an accent background. |
 | `--color-error` | `#b3261e` | Error/not-found messaging. |
 | `--color-shadow` | `rgba(0, 0, 0, 0.3)` | Overlay panel shadow. |
+| `--color-route` | `#1a73e8` | The drawn, snapped path. |
+| `--color-waypoint` | `#d93025` | Waypoint markers — distinct from the path (FR-005). |
 | `--space-xs` | `0.4rem` | Tight internal padding. |
 | `--space-sm` | `0.5rem` | Default gap between controls. |
 | `--space-md` | `0.75rem` | Panel padding. |
@@ -37,3 +39,7 @@ values or bare pixel spacing in component styles.
   so they consistently stack above Leaflet's internal panes and controls.
 - Dark mode / theming is out of scope for the first version — one palette,
   matching the product's "one screen, one job" principle.
+- Leaflet vector layers (the route polyline, waypoint markers) take their
+  color from these same tokens via `var(--token-name)`, not a hex literal in
+  the component — Leaflet's SVG renderer resolves CSS custom properties in
+  path attributes the same as it would in a stylesheet.

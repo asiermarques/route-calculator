@@ -4,19 +4,21 @@ A simple web app to draw a route on a map and know how many kilometres it is.
 Search for an address, click along the map to build a route, and see the
 distance update live. No account, nothing saved — see `docs/PRODUCT.md`.
 
-Status: **Slice 1 of 3 shipped** — the map screen and address search. Route
-drawing, distance, and undo/clear land in later slices (see
+Status: **All 3 slices shipped** — map and address search, route drawing with
+live distance, and undo/clear (see
 `.workflow/implementation-plans/001-map-route-drawing.md`).
 
 ## Quick start
 
 ```bash
 npm install
-npm run dev       # http://localhost:5173
+cp .env.example .env   # then set VITE_ROUTING_API_KEY — see below
+npm run dev             # http://localhost:5173
 ```
 
-No configuration is required to run what's built so far: the map (OpenStreetMap
-tiles) and address search (Nominatim) both work with no API key.
+The map (OpenStreetMap tiles) and address search (Nominatim) work with no API
+key. Drawing a route needs a routing-provider API key — the app fails clearly
+at startup if it's missing or misconfigured.
 
 ## Testing
 
@@ -28,25 +30,29 @@ npm run e2e         # end-to-end tests (Playwright, against the build)
 ```
 
 Both suites run fully offline: third-party requests (map tiles, Nominatim,
-and later the routing provider) are intercepted with fixture responses, so
-nothing here depends on live third-party availability or quota. See
+and the routing provider) are intercepted with fixture responses, so nothing
+here depends on live third-party availability or quota. `npm run build`
+needs `VITE_ROUTING_PROVIDER` and `VITE_ROUTING_API_KEY` set in the
+environment (any non-empty key works — the e2e suite mocks the routing
+provider's network calls, it never reaches the real service). See
 `CLAUDE.md` for the full testing conventions.
 
 ## Configuration and API keys
 
-Nothing to configure yet. **Starting with Slice 2** (route drawing), the app
-will need a routing-provider API key to snap segments to real streets. Get
-one ready now if you want to move straight into that slice:
+Drawing a route needs a routing-provider API key, set via build-time
+environment variables (`VITE_ROUTING_PROVIDER`, `VITE_ROUTING_API_KEY` — see
+`.env.example`). `VITE_ROUTING_PROVIDER` is one of `openrouteservice` or
+`mapbox`; switching provider is a configuration change only.
 
-- **OpenRouteService** (default provider) — free tier, no credit card.
+- **OpenRouteService** (`openrouteservice`) — free tier, no credit card.
   1. Create an account at <https://openrouteservice.org/dev/#/signup>.
   2. Generate a token from the dashboard (Dashboard → Request a token → give
      it a name, standard plan is enough for personal use).
   3. The free tier is capped (2,000 requests/day at the time of writing) —
      plenty for a single-person tool, but do not commit the key or point it
      at anything that could scale past that.
-- **Mapbox Directions** (drop-in alternative, added in Slice 2's US-005) —
-  free tier included with any Mapbox account.
+- **Mapbox Directions** (`mapbox`) — free tier included with any Mapbox
+  account.
   1. Create an account at <https://www.mapbox.com/>.
   2. Copy your **default public token** from
      <https://account.mapbox.com/access-tokens/>, or create a scoped one with
@@ -59,8 +65,8 @@ client bundle and is publicly visible. Before deploying anywhere public:
   both providers support this from their dashboard).
 - **Never use a key with billing exposure** beyond its free tier.
 
-Once Slice 2 lands, the build-time environment variables that select the
-provider and carry the key will be documented here and in `.env.example`.
+If `VITE_ROUTING_PROVIDER` names an unknown provider, or `VITE_ROUTING_API_KEY`
+is unset, the app shows a clear startup error instead of the map.
 
 ## Documentation
 

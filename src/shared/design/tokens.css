@@ -8,6 +8,8 @@
   --color-accent-text: #ffffff;
   --color-error: #b3261e;
   --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-route: #1a73e8;
+  --color-waypoint: #d93025;
 
   --space-xs: 0.4rem;
   --space-sm: 0.5rem;

@@ -34,6 +34,17 @@ owning its UI, state and service calls. Cross-cutting concerns (map instance,
 configuration, the routing provider interface) live in `src/shared/`. See
 `CLAUDE.md` for the current slice list and testing conventions.
 
+Route state (waypoints, snapped segments, distance) is owned by one hook in
+`route-drawing` and passed down as props to the overlay controls in
+`route-correction` — slices don't import each other, so state that's shared
+across slices is lifted to `App.tsx`, which composes them.
+
+Every overlay panel rendered inside the map (`src/shared/map/MapView`) uses
+`src/shared/map/useDisableMapClickPropagation`, so interacting with the panel
+(clicking a button, typing) doesn't also bubble through to Leaflet's own
+click handling — which route-drawing listens on to place waypoints — and get
+misread as a click on the map itself.
+
 ## Testing
 
 Vitest + React Testing Library for unit/integration tests (colocated with

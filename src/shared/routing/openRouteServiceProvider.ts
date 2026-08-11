@@ -1,0 +1,51 @@
+import type { LatLng, RouteSegment, RoutingProvider } from './types'
+
+const DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions'
+// A single default profile for all routes (ASM-002) — the product doesn't
+// distinguish activities, and foot-walking suits both running and walking.
+const PROFILE = 'foot-walking'
+
+type OrsFeature = {
+  geometry: { coordinates: [number, number][] }
+  properties: { summary: { distance: number } }
+}
+
+/** Routing provider backed by OpenRouteService's Directions API. */
+export class OpenRouteServiceProvider implements RoutingProvider {
+  private readonly apiKey: string
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async getRoute(from: LatLng, to: LatLng): Promise<RouteSegment> {
+    const response = await fetch(`${DIRECTIONS_URL}/${PROFILE}/geojson`, {
+      method: 'POST',
+      headers: {
+        Authorization: this.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        coordinates: [
+          [from.lng, from.lat],
+          [to.lng, to.lat],
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`OpenRouteService request failed with status ${response.status}`)
+    }
+
+    const data = (await response.json()) as { features?: OrsFeature[] }
+    const feature = data.features?.[0]
+    if (!feature) {
+      throw new Error('OpenRouteService returned no route between those points')
+    }
+
+    return {
+      path: feature.geometry.coordinates.map(([lng, lat]) => ({ lat, lng })),
+      distanceMeters: feature.properties.summary.distance,
+    }
+  }
+}

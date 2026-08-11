@@ -1,0 +1,13 @@
+.readout {
+  position: absolute;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  z-index: var(--z-overlay);
+  background: var(--color-surface);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 4px var(--color-shadow);
+  font: var(--font-ui);
+  font-weight: 600;
+  color: var(--color-text);
+}

@@ -1,0 +1,18 @@
+.configError {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--space-lg);
+  font: var(--font-ui);
+  color: var(--color-text);
+}
+
+.configErrorMessage {
+  max-width: 32rem;
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 1px 4px var(--color-shadow);
+  color: var(--color-error);
+}

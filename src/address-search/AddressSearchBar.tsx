@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMap } from 'react-leaflet'
 import { geocodeAddress } from './geocode'
+import { useDisableMapClickPropagation } from '../shared/map/useDisableMapClickPropagation'
 import styles from './AddressSearchBar.module.css'
 
 const MATCH_ZOOM = 16
@@ -14,6 +15,7 @@ type Status = { kind: 'idle' } | { kind: 'searching' } | { kind: 'error'; messag
  * submit-triggered, never per keystroke, per Nominatim's usage policy. */
 export function AddressSearchBar() {
   const map = useMap()
+  const formRef = useDisableMapClickPropagation<HTMLFormElement>()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
 
@@ -35,7 +37,7 @@ export function AddressSearchBar() {
   }
 
   return (
-    <form className={styles.bar} onSubmit={handleSubmit}>
+    <form ref={formRef} className={styles.bar} onSubmit={handleSubmit}>
       <label className={styles.label} htmlFor="address-search-input">
         Address
       </label>
