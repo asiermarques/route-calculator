@@ -10,10 +10,10 @@
   right: var(--space-lg);
   z-index: var(--z-overlay);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
-    'brand readout actions'
-    'search search search';
+    'brand readout'
+    'search search';
   align-items: center;
   gap: var(--space-sm) var(--space-md);
   padding: var(--space-sm) var(--space-md);
@@ -58,12 +58,6 @@
   justify-self: end;
 }
 
-.actions {
-  grid-area: actions;
-  display: flex;
-  align-items: center;
-}
-
 /* The smallest phones give the bars their edge margin back — see the matching
  * rule in `AppFooter.module.css`, which is where the width is actually needed.
  * This one is here so the two bars stay the same width as each other. */
@@ -76,8 +70,8 @@
 
 @media (min-width: 44rem) {
   .header {
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
-    grid-template-areas: 'brand search readout actions';
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'brand search readout';
     gap: var(--space-md);
   }
 
@@ -106,8 +100,75 @@
   }
 }
 
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateX(0.75rem);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .header {
     animation: none;
+  }
+}
+
+/* The card (60rem and up): the bar stops spanning the width and becomes a
+ * panel in the top right corner, the three things it holds stacked in the
+ * order they were in across it — name, search, answer.
+ *
+ * It moves for the same reason the footer did, and it is the larger half of
+ * that: a full-width bar is 1408×97 on a laptop, against 66px of rail. What it
+ * costs is not area — a card here and a card stacked on the rail cover the
+ * same map — it is that the band cuts the map in two, and the strip it leaves
+ * above itself is 100px deep, which is not enough map to draw a route in.
+ * Taken off, the map is one surface from edge to edge again.
+ *
+ * Right, and not stacked onto the rail on the left, is a matter of vertical
+ * budget rather than taste: a card is ~200px and the rail is ~300px, and 500px
+ * of stacked panel is 85% of the column a laptop actually has — a sidebar,
+ * which is the thing that was just taken off the bottom, turned on its side.
+ * It also leaves the figure boxed between a text field and a toolbar, and the
+ * figure is the second loudest thing on this screen by design. Over here it
+ * has a corner of its own, and the two panels face each other across the map:
+ * what is acted on the route with at one edge, what is read off it at the
+ * other. */
+@media (min-width: 60rem) {
+  .header {
+    left: auto;
+    /* Wide enough for the search row it has to hold — a 16px field and a
+     * button beside it — and no wider: past this the card starts eating the
+     * map it was just taken off. */
+    width: 22rem;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'brand'
+      'search'
+      'readout';
+    gap: var(--space-md);
+    padding: var(--space-md);
+    /* Arrives from the edge it lives on, the way the rail does from its own. */
+    animation-name: cardIn;
+  }
+
+  /* The hatch was drawn to run *along* a bar and fade out before the wordmark
+   * and the figure. Stood up, it has to fade along the other axis or it lies
+   * behind the whole card, and a texture behind the distance is a texture
+   * competing with the one number the app exists to produce. */
+  .header::before {
+    mask-image: linear-gradient(to bottom, #000 8%, transparent 62%);
+  }
+
+  .search {
+    max-width: none;
+  }
+
+  /* The rule that separated the figure from the controls beside it becomes the
+   * rule that separates it from the controls above it. */
+  .readout {
+    justify-self: stretch;
+    padding: var(--space-sm) 0 0;
+    border-top: 1px solid var(--color-border);
+    border-left: none;
   }
 }

@@ -11,6 +11,20 @@
   color: var(--color-text);
 }
 
+/* Out of flow while it has nothing to say — not `display: none`, which is the
+ * one way of hiding a live region that stops it being announced when it comes
+ * back (RoutingStatus.tsx), and which is why this is a position and not a
+ * display.
+ *
+ * A zero-height flex item is not free: it still opens a flex line of its own,
+ * and the bar's row `gap` is still drawn above the controls under it. That gap
+ * is invisible on a dark panel and reads as the row sitting a few pixels low —
+ * the controls were 17px from the top of the bar and 9px from the bottom. Taking
+ * the empty region out of flow is what actually centres them. */
+.status:empty {
+  position: absolute;
+}
+
 .status:not(:empty) {
   display: flex;
   flex-direction: column;

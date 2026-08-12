@@ -35,7 +35,10 @@ tracking.
 ## In scope
 
 - Address search that centres the map.
-- Click-to-add waypoints with street snapping.
+- Click-to-add waypoints with street snapping, with a hint over an empty map
+  saying so — the map is the input and nothing else on screen says it — which
+  retires itself after a few seconds or on the first waypoint, whichever comes
+  first.
 - Live total distance in kilometres.
 - Remove the last waypoint, clear the whole route.
 - Delete any single waypoint, wherever it sits in the route — its neighbours
@@ -49,7 +52,11 @@ tracking.
 - On a public deploy, a screen for the visitor's own routing-provider choice
   and API key — not stored, not sent anywhere but that provider — asked once
   per visit and reachable again at any time from within the app, to correct
-  a mistyped key or a wrong provider without losing the drawn route. The
+  a mistyped key or a wrong provider without losing the drawn route. Being the
+  app's first screen and, for anyone who leaves, its only one, it says what the
+  app does before it asks for anything, and puts the key in terms of what the
+  visitor gets by supplying it: their own free routing account, no sign-up
+  here, no quota shared with strangers. The
   screen tells the visitor what a leaked key would cost for the provider
   they picked before they type it in: OpenRouteService's key cannot be tied
   to this app's domain at all, so a leak is usable from anywhere and repeated

@@ -22,6 +22,56 @@ test('a single click places a waypoint and draws no path', async ({ page }) => {
   await expect(page.getByText('0 km')).toBeVisible()
 })
 
+/** The hint over an empty map: the only thing that says the surface between
+ * the two bars is where a route comes from. It has to say it without becoming
+ * a control — one a visitor could hit instead of the map it is pointing at, or
+ * one that stays there for the rest of the session. */
+
+test('an empty map says how a route is started, and the click it asks for goes through it to the map', async ({
+  page,
+}) => {
+  await mockTiles(page)
+  await mockRouting(page, [])
+  await page.goto('/')
+  await supplyCredentials(page)
+
+  const hint = page.getByText(/click the map to start your route/i)
+  await expect(hint).toBeVisible()
+
+  // Aimed at the hint itself, which sits over the middle of the map: it takes
+  // no clicks, so this lands on the map and does the very thing it asks for.
+  const pill = (await hint.boundingBox())!
+  await page.mouse.click(pill.x + pill.width / 2, pill.y + pill.height / 2)
+
+  await expect(page.locator('path[fill="var(--color-waypoint)"]')).toHaveCount(1)
+  // And having been acted on, it is gone rather than left over the route.
+  await expect(hint).toHaveCount(0)
+})
+
+test('the hint leaves on its own, and does not come back when the route is cleared', async ({
+  page,
+}) => {
+  await mockTiles(page)
+  await mockRouting(page, [{ distanceMeters: 1000 }])
+  await page.goto('/')
+  await supplyCredentials(page)
+
+  const hint = page.getByText(/click the map to start your route/i)
+  await expect(hint).toBeVisible()
+  await expect(hint).toHaveCount(0, { timeout: 15_000 })
+
+  const box = await mapBox(page)
+  await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.4)
+  await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.6)
+  await expect(page.getByText('1.0 km')).toBeVisible()
+  await page.getByRole('button', { name: /^clear$/i }).click()
+
+  // An empty map again, but not a first-time visitor: someone who has drawn
+  // and cleared a route knows how one is drawn.
+  await expect(page.locator('path[fill="var(--color-waypoint)"]')).toHaveCount(0)
+  await expect(hint).toHaveCount(0)
+})
+
 test('a second click on a routable street draws a snapped path and updates the distance', async ({ page }) => {
   await mockTiles(page)
   await mockRouting(page, [{ distanceMeters: 1200 }])

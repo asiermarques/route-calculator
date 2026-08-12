@@ -15,7 +15,7 @@
   /* One step up, for a control *inside* a panel (a field, a hovered button):
    * on this palette a raised element is lighter, never lower-contrast. */
   --color-surface-raised: #181f1c;
-  /* Behind everything, on the one screen that has no map under it yet. */
+  /* Behind everything, seen only in the moment before the first tiles land. */
   --color-void: #050807;
   --color-text: #f1f5ef;
   /* Secondary prose and micro-labels. 6.7:1 on --color-surface — dimmed, but
@@ -90,7 +90,6 @@
 
   --radius: 0.375rem;
   --radius-lg: 0.75rem;
-  --radius-pill: 999px;
 
   /* 48px. A finger hits 44px reliably, and this is deliberately a notch above
    * that rather than exactly it: a control sized to the minimum can still be
@@ -115,8 +114,8 @@
   /* Uppercase micro-labels: what a control or a figure is. Always paired with
    * --tracking-label — condensed capitals set solid are unreadable. */
   --font-label: 600 11px/1 var(--font-family-display);
-  /* Button labels: condensed capitals, so a long one ("Add waypoint at map
-   * centre") stays a single row on a phone. */
+  /* Button labels: condensed capitals, so a long one ("Remove last waypoint")
+   * stays a single row on a phone. */
   --font-action: 600 14px/1 var(--font-family-display);
   /* The distance itself — the largest thing on the screen after the map. It
    * scales with the viewport rather than sitting at one size, since the bar it

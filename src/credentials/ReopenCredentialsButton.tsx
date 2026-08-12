@@ -7,10 +7,14 @@ type ReopenCredentialsButtonProps = {
 
 /** Always-reachable way back to the credentials screen (US-005), so a
  * visitor who mistyped a key or picked the wrong provider can correct it
- * without reloading and losing the route they've drawn. A single-glyph
- * button, not a text label: it stacks below the distance readout in the
- * top-right corner (docs/DESIGN.md), and that column is only as wide as the
- * readout itself. */
+ * without reloading and losing the route they've drawn. It sits at the end of
+ * the footer's tool row, beside undo and clear (docs/DESIGN.md): changing the
+ * provider is something the visitor does to the app, and the footer is the bar
+ * things are done from — the header only reports.
+ *
+ * A single glyph rather than a text label, because it is the one control there
+ * that isn't part of drawing a route: a third uppercase label would compete
+ * with the two that are, and a phone's tool row has no width to give it. */
 export function ReopenCredentialsButton({ onClick }: ReopenCredentialsButtonProps) {
   const ref = useDisableMapClickPropagation<HTMLDivElement>()
 

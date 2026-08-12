@@ -32,22 +32,20 @@ export const PROVIDER_INFO: Record<ProviderName, ProviderInfo> = {
     label: 'Mapbox Directions',
     signupUrl: 'https://www.mapbox.com/',
     keyPageUrl: 'https://account.mapbox.com/access-tokens/',
-    credentialKind: 'your default public token (starts with "pk.") — not a secret ("sk.") token',
-    freeTierNote: "Mapbox's free tier is enough for personal use.",
+    credentialKind: 'your default public token — the one starting "pk.", not a secret "sk." one',
+    freeTierNote: 'The free tier covers personal use.',
     restrictionStep: (domain) =>
-      `Restrict it to this app's domain — ${domain} — from the same account.mapbox.com page: open the ` +
-      `token, and under "Token restrictions" add ${domain} to its URL restrictions. A token stolen from ` +
-      'this page is then worthless anywhere else.',
+      `On the same account.mapbox.com page, open the token and add ${domain} to its URL restrictions. ` +
+      'A token taken from this page is then worthless anywhere else.',
   },
   openrouteservice: {
     label: 'OpenRouteService',
     signupUrl: 'https://openrouteservice.org/dev/#/signup',
     keyPageUrl: 'https://openrouteservice.org/dev/#/home',
-    credentialKind: 'the API key shown on your account dashboard',
-    freeTierNote: "OpenRouteService's free tier is enough for personal use.",
+    credentialKind: 'the API key on your account dashboard',
+    freeTierNote: 'The free tier covers personal use.',
     unrestrictableWarning:
-      "This key cannot be restricted to this app's domain — OpenRouteService offers no domain or " +
-      'referrer restriction, so a leaked key is usable from anywhere. OpenRouteService also allows only ' +
-      'one account per person, so repeated abuse of a leaked key can get your only account blocked.',
+      'This key cannot be restricted to a domain — a leaked one is usable from anywhere, and ' +
+      'OpenRouteService allows one account per person, so abuse of it can get your only account blocked.',
   },
 }

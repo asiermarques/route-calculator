@@ -62,7 +62,6 @@ function appControls(page: Page) {
   return [
     page.getByRole('textbox', { name: /address/i }),
     page.getByRole('button', { name: /^search$/i }),
-    page.getByRole('button', { name: /add waypoint/i }),
     page.getByRole('button', { name: /remove last waypoint/i }),
     page.getByRole('button', { name: /^clear$/i }),
     page.getByRole('button', { name: /change routing provider/i }),
@@ -82,13 +81,13 @@ test.describe('credentials screen on a phone', () => {
       // form centred along an axis it overflows spills past *both* ends of its
       // scroll container, leaving the top permanently out of reach. The
       // heading is the first thing a visitor needs and the first thing lost.
-      const heading = page.getByRole('heading', { name: /connect a routing provider/i })
+      const heading = page.getByRole('heading', { name: /draw a route/i })
       await expect(heading).toBeInViewport()
       const box = (await heading.boundingBox())!
       expect(box.y, 'the heading starts above the top of the screen').toBeGreaterThanOrEqual(0)
 
       // And the far end is reachable by scrolling, rather than cut off below.
-      const submit = page.getByRole('button', { name: /continue/i })
+      const submit = page.getByRole('button', { name: /start drawing/i })
       await submit.scrollIntoViewIfNeeded()
       await expect(submit).toBeInViewport()
     })
@@ -101,7 +100,7 @@ test.describe('credentials screen on a phone', () => {
     for (const control of [
       page.getByRole('combobox', { name: /routing provider/i }),
       page.getByLabel(/api key/i),
-      page.getByRole('button', { name: /continue/i }),
+      page.getByRole('button', { name: /start drawing/i }),
     ]) {
       const box = (await control.boundingBox())!
       expect(box.height, `${await control.textContent()} is too short to tap`).toBeGreaterThanOrEqual(
@@ -173,6 +172,28 @@ test.describe('map controls on a phone', () => {
 })
 
 test.describe('drawing a route by touch', () => {
+  test('the map hint asks for a tap, and covers neither bar while it is up', async ({ page }) => {
+    await mockTiles(page)
+    await mockRouting(page, [])
+    await page.goto('/')
+    await supplyCredentials(page)
+
+    // There is no cursor on a phone to say the map is the input, which makes
+    // this the only thing that does — in the words a phone uses.
+    const hint = page.getByText(/tap the map to start your route/i)
+    await expect(hint).toBeVisible()
+
+    // It floats over the map, which nothing else in this app is allowed to do,
+    // so it carries the same obligation as everything else: not to land on a
+    // control. A phone is where that is tightest — two stacked bars, and the
+    // least map between them.
+    const box = (await hint.boundingBox())!
+    const header = (await page.locator('header').boundingBox())!
+    const footer = (await page.locator('footer').boundingBox())!
+    expect(box.y, 'the hint reaches up into the header').toBeGreaterThan(header.y + header.height)
+    expect(box.y + box.height, 'the hint reaches down into the footer').toBeLessThan(footer.y)
+  })
+
   test('a tap places a waypoint, and tapping it back opens its options', async ({ page }) => {
     await mockTiles(page)
     await mockRouting(page, [{ distanceMeters: 1200 }])

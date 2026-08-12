@@ -16,12 +16,30 @@ describe('CredentialsScreen', () => {
     expect(keyInput).toHaveAttribute('type', 'password')
   })
 
+  it('says what the app does before it asks for anything, on the screen a first-time visitor arrives at', () => {
+    render(<CredentialsScreen onSubmit={vi.fn()} />)
+
+    // This screen is the app's first impression and, for anyone who leaves
+    // here, its only one (docs/DESIGN.md).
+    expect(screen.getByRole('heading', { name: /draw a route/i })).toBeInTheDocument()
+    expect(screen.getByText(/follows real streets/i)).toBeInTheDocument()
+    // And the key is put as what it buys them, not as a toll.
+    expect(screen.getByText(/no sign-up here/i)).toBeInTheDocument()
+  })
+
+  it('drops the pitch when reopened, where the visitor already has the app and wants one setting (US-005)', () => {
+    render(<CredentialsScreen onSubmit={vi.fn()} onDismiss={vi.fn()} initialProvider="mapbox" />)
+
+    expect(screen.getByRole('heading', { name: /change routing provider/i })).toBeInTheDocument()
+    expect(screen.queryByText(/follows real streets/i)).not.toBeInTheDocument()
+  })
+
   it('rejects an empty key without dismissing the screen, and explains what is missing (EDGE-003)', async () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup()
     render(<CredentialsScreen onSubmit={onSubmit} />)
 
-    await user.click(screen.getByRole('button', { name: /continue/i }))
+    await user.click(screen.getByRole('button', { name: /start drawing/i }))
 
     expect(onSubmit).not.toHaveBeenCalled()
     expect(screen.getByRole('alert')).toHaveTextContent(/enter your api key/i)
@@ -33,7 +51,7 @@ describe('CredentialsScreen', () => {
     render(<CredentialsScreen onSubmit={onSubmit} />)
 
     await user.type(screen.getByLabelText(/api key/i), '   ')
-    await user.click(screen.getByRole('button', { name: /continue/i }))
+    await user.click(screen.getByRole('button', { name: /start drawing/i }))
 
     expect(onSubmit).not.toHaveBeenCalled()
     expect(screen.getByRole('alert')).toBeInTheDocument()
@@ -46,7 +64,7 @@ describe('CredentialsScreen', () => {
 
     await user.selectOptions(screen.getByRole('combobox', { name: /routing provider/i }), 'mapbox')
     await user.type(screen.getByLabelText(/api key/i), '  pk.my-token  ')
-    await user.click(screen.getByRole('button', { name: /continue/i }))
+    await user.click(screen.getByRole('button', { name: /start drawing/i }))
 
     expect(onSubmit).toHaveBeenCalledWith('mapbox', 'pk.my-token')
   })
@@ -152,7 +170,7 @@ describe('CredentialsScreen', () => {
     render(<CredentialsScreen onSubmit={onSubmit} onDismiss={vi.fn()} initialProvider="openrouteservice" />)
 
     await user.type(screen.getByLabelText(/api key/i), 'a-working-key')
-    await user.click(screen.getByRole('button', { name: /continue/i }))
+    await user.click(screen.getByRole('button', { name: /start drawing/i }))
 
     expect(onSubmit).toHaveBeenCalledWith('openrouteservice', 'a-working-key')
   })
@@ -171,7 +189,7 @@ describe('CredentialsScreen', () => {
     render(<CredentialsScreen onSubmit={onSubmit} initialProvider="openrouteservice" />)
 
     await user.type(screen.getByLabelText(/api key/i), 'a-real-key')
-    await user.click(screen.getByRole('button', { name: /continue/i }))
+    await user.click(screen.getByRole('button', { name: /start drawing/i }))
 
     expect(onSubmit).toHaveBeenCalledWith('openrouteservice', 'a-real-key')
   })

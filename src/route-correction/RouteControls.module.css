@@ -1,4 +1,6 @@
-/* Sits in the footer bar (`shared/layout/AppFooter`), which places it. */
+/* Sits in the footer (`shared/layout/AppFooter`), which places it — and which
+ * has two arrangements, so this has two too: a row of labelled buttons in the
+ * bar, a column of icons in the rail. */
 .controls {
   display: flex;
   align-items: center;
@@ -8,6 +10,10 @@
 /* Corrective, not primary: outlined rather than filled with the accent, which
  * belongs to the route and to the answer. */
 .button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
   min-height: var(--size-control-row);
   padding: 0 var(--space-md);
   border: 1px solid var(--color-border);
@@ -35,6 +41,17 @@
   cursor: default;
 }
 
+/* In the bar the label *is* the button, and the icon is not drawn at all: two
+ * icons plus two labels is some 56px added to a row that already gives its
+ * side padding back at 25rem to stay on one line. Each arrangement carries one
+ * of the two, never both. */
+.icon {
+  display: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+
 /* On a small phone these two, the zoom pair and the footer's own padding come
  * to a dozen pixels more than the screen has, and the row they share breaks
  * into two — a third row of bar over a map that has 640px of height in total.
@@ -44,5 +61,60 @@
 @media (max-width: 25rem) {
   .button {
     padding: 0 var(--space-sm);
+  }
+}
+
+/* The rail (`AppFooter`, 60rem and up): a column of square buttons, so the
+ * label has to come off the face of the button — "Remove last waypoint" is
+ * five times the width of the control it names. It becomes a tooltip on the
+ * side the rail has room on, shown on hover *and* on keyboard focus, since a
+ * control whose name only appears to a mouse is a control the keyboard uses
+ * blind.
+ *
+ * `opacity`, not `display` or `visibility`: those two take the label out of
+ * the accessibility tree, and the label is this button's accessible name
+ * (RouteControls.tsx). Hidden this way it is still announced, still found by
+ * find-in-page, and still exactly the sentence a sighted user reads. */
+@media (min-width: 60rem) {
+  .controls {
+    flex-direction: column;
+  }
+
+  .button {
+    position: relative;
+    width: var(--size-control-row);
+    padding: 0;
+  }
+
+  .icon {
+    display: block;
+  }
+
+  .label {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + var(--space-sm));
+    transform: translateY(-50%);
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-control);
+    opacity: 0;
+    /* It hangs over the map, so it answers no clicks: the tooltip of a control
+     * must never become a target of its own. */
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  .button:hover:not(:disabled) .label,
+  .button:focus-visible .label {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .label {
+    transition: none;
   }
 }

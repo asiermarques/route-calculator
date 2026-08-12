@@ -47,3 +47,33 @@
   color: var(--color-text-muted);
   cursor: default;
 }
+
+/* The rail (`shared/layout/AppFooter`, 60rem and up): the same segmented pair
+ * stood on end.
+ *
+ * `column-reverse` rather than a different DOM order, so zoom in is on top —
+ * which is where every map that has ever stacked this pair puts it, Leaflet's
+ * own control included, and the one thing about a vertical zoom pair that is
+ * genuinely muscle memory. The reading order stays out-then-in, which is what
+ * the bar arrangement needs and what a phone therefore keeps: the two are
+ * separately labelled, so the order they are reached in says nothing the
+ * label doesn't. */
+@media (min-width: 60rem) {
+  .controls {
+    flex-direction: column-reverse;
+  }
+
+  /* Zoom out, now the lower of the two. */
+  .button:first-child {
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+
+  /* Zoom in, now the upper. It gives up the edge it shares with the button
+   * under it and takes back the one the bar had it give up — the seam is
+   * drawn once, by whichever of the pair is not the one dropping a border. */
+  .button:last-child {
+    border-radius: var(--radius) var(--radius) 0 0;
+    border-left: 1px solid var(--color-border);
+    border-bottom: none;
+  }
+}

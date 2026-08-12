@@ -32,7 +32,8 @@ the same credentials screen a production build shows every visitor.
 
 - **Find where you're going.** Type an address in the header bar and press
   Search. This only moves the map — it never places a waypoint.
-- **Draw the route.** Click (or tap) the map to add a waypoint. From the second
+- **Draw the route.** Click (or tap) the map to add a waypoint — a hint over an
+  empty map says so, and gets out of the way once you have. From the second
   one on, each new segment is routed along real streets, and the total in the
   header updates. `Routing…` in the bottom bar means a segment is in flight.
 - **Fix a waypoint.** Click one to open its options:
@@ -40,11 +41,13 @@ the same credentials screen a production build shows every visitor.
   - **Move** arms it — the next click on the map is its new position, and both
     sides re-route. Click the waypoint again, or press `Esc`, to cancel.
 - **Start over.** *Remove last waypoint* drops the most recent one; *Clear*
-  empties the route.
-- **Without a mouse.** Arrow keys pan the map, `+`/`−` zoom, and *Add waypoint
-  at map centre* drops one where the map is pointed — so a route can be drawn
-  end to end from the keyboard. Editing an existing waypoint is
-  pointer/touch-only by decision; undo and clear are the keyboard path back.
+  empties the route. Both are in the footer toolbar, with the key button that
+  reopens the credentials screen.
+- **Without a mouse.** Arrow keys pan the map and the zoom buttons work from
+  the keyboard, as do *Remove last waypoint* and *Clear*. Placing a waypoint
+  does not: it is a click on the map, and the control that used to drop one at
+  the map's centre has been removed, so drawing a route needs a pointer or a
+  touchscreen. Editing an existing waypoint is pointer/touch-only too.
 - **Reloading discards everything**, including the routing key on a public
   deploy. That is deliberate, not an oversight.
 
@@ -76,7 +79,7 @@ on the build:
   their own key, which is held in memory for that browser tab only, sent only
   to the chosen provider, and gone on reload. The screen carries the same
   how-to-get-a-key guidance below, inline, so a first-time visitor never has
-  to leave the page for it. The key button in the header bar
+  to leave the page for it. The key button in the footer toolbar
   reopens the screen at any time — to fix a mistyped key or switch provider —
   without reloading or losing the drawn route. See
   `docs/adr/0001-user-supplied-routing-api-key-in-browser-storage.md`.

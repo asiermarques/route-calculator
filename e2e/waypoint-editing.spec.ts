@@ -162,7 +162,10 @@ test.describe('opening and closing a waypoint\'s options (US-002)', () => {
 
     await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3)
     await expect(waypointOptions(page)).toBeVisible()
-    await page.mouse.click(box.x + box.width * 0.8, box.y + box.height * 0.2)
+    // Somewhere else that is actually map: the top right corner is where the
+    // header card sits on a wide screen (docs/DESIGN.md), and a click that
+    // lands on an overlay is not the click this is about.
+    await page.mouse.click(box.x + box.width * 0.7, box.y + box.height * 0.75)
 
     await expect(waypointOptions(page)).not.toBeVisible()
     await expect(waypointMarkers(page)).toHaveCount(3)

@@ -1,18 +1,21 @@
-/* The bottom half of the shell. Phone-first, and in two arrangements built
- * from one set of markup:
+/* The toolbar of the shell. Phone-first, and in two arrangements built from one
+ * set of markup:
  *
- * - Narrow: one panel spanning the width, the same bar as the header, wrapping
- *   to as many rows as its controls need.
- * - Wide (60rem and up): two panels instead — the actions
- *   at one end, zoom at the other, with nothing but map between them. A single
- *   bar there is a band of dark panel drawn across the bottom of a map that has
- *   nothing under it: on a laptop the controls occupy maybe a third of that
- *   width and the rest is a curtain over the thing the app exists to show.
+ * - Narrow: one panel spanning the width along the bottom, the same bar as the
+ *   header, wrapping to as many rows as its controls need.
+ * - Wide (60rem and up): a rail down the left edge instead — the two panels it
+ *   is made of, actions and zoom, stacked one above the other and each about
+ *   one control wide. A bar there is a band of dark panel drawn across the
+ *   bottom of a map that has nothing under it: on a laptop the controls occupy
+ *   maybe a third of that width and the rest is a curtain over the thing the
+ *   app exists to show. Standing them up gives the whole bottom of the map
+ *   back and costs one narrow column at an edge — and a column at an edge is
+ *   what a tool palette has looked like since before this app existed.
  *
  * The bar is the *narrow* case and not a desktop layout squeezed: this is the
- * only arrangement that fits a phone, where there is no width to spend on a gap
- * between two panels and every control has to reach the edges to be worth its
- * row.
+ * only arrangement that fits a phone, where there is no width to spend on a
+ * column beside the map and every control has to reach the edges to be worth
+ * its row. Nothing below 60rem changed when the rail arrived.
  */
 .footer {
   position: absolute;
@@ -36,38 +39,52 @@
   animation: footerIn 460ms cubic-bezier(0.2, 0.9, 0.2, 1) 120ms both;
 }
 
-/* Not a box while the footer is one bar: the status, the add control and the
- * corrections are direct items of the bar, so they wrap against it the way
- * they always have. It becomes the left-hand panel at the split below, which
- * is the one place the grouping is real. */
+/* Not a box while the footer is one bar: the status and the tools are direct
+ * items of the bar, so they wrap against it the way they always have. It
+ * becomes the left-hand panel at the split below, which is the one place the
+ * grouping is real. */
 .actions {
   display: contents;
 }
 
-.add,
-.corrections {
+/* Likewise not a box in the bar: the region inside it is a direct item of the
+ * bar, so it spans a row of its own and takes itself out of flow while it is
+ * empty, exactly as it did before it had a slot. The slot exists for the rail,
+ * where the status has to leave the panel altogether. */
+.statusSlot {
+  display: contents;
+}
+
+/* One tool row: the corrections, then the way back to the credentials screen.
+ * They are one group because they are one kind of thing — what the visitor
+ * presses, as opposed to what the bar reports — and grouping them is what lets
+ * the zoom pair wrap away as a unit on a phone instead of a single button
+ * breaking off the end. */
+.tools {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-sm);
   min-width: 0;
 }
 
-/* Keeps the corrections beside zoom at the end of whichever row they land on,
- * rather than stranded at the far side of a wrapped one. */
-.corrections {
-  margin-left: auto;
-}
-
 .zoom {
   display: flex;
   align-items: center;
+  /* Holds zoom against the far edge on whichever row it lands on. The bar's
+   * `space-between` only does that while the tools and the zoom pair share a
+   * row; on a phone they don't, and a wrapped line is laid out from its own
+   * start edge — leaving the pair marooned under the tools, at the one end of
+   * the bar a right-handed thumb doesn't reach. An auto margin collects the
+   * free space of the line the item actually ends up on. */
+  margin-left: auto;
 }
 
 /* On the smallest phones the bars take the edge margin back: at 360px the
  * corrections and the zoom pair are a dozen pixels wider than the row they
- * share, and the row breaks into two — a third row of bar over a map that has
- * 640px of height in all. `AppHeader` narrows its offset at the same width, so
- * the two bars still line up with each other. */
+ * share, and the bar doubles in height over a screen that has 640px of it in
+ * all. `AppHeader` narrows its offset at the same width, so the two bars still
+ * line up with each other. */
 @media (max-width: 25rem) {
   .footer {
     left: var(--space-sm);
@@ -77,23 +94,41 @@
 
 @media (min-width: 60rem) {
   /* The bar stops being a panel and becomes the frame the two panels are
-   * placed in: full width still, so they sit against opposite edges, but
+   * placed in: a column running the height of the map down its left edge,
    * drawing nothing itself — and, just as importantly, catching nothing. An
-   * invisible full-width strip across the bottom of the map still answers
-   * every click that lands on it, and this one answers by *swallowing* it
-   * (`useDisableMapClickPropagation`): the gap it opens over the map would
-   * look like map and behave like a panel. The panels take their own clicks
-   * back below, and events from them still bubble through this element, so the
-   * guard that keeps a press on a control from placing a waypoint under it
-   * goes on working. */
+   * invisible strip over the map still answers every click that lands on it,
+   * and this one answers by *swallowing* it
+   * (`useDisableMapClickPropagation`): the space it leaves between and around
+   * the panels would look like map and behave like a panel. The panels take
+   * their own clicks back below, and events from them still bubble through
+   * this element, so the guard that keeps a press on a control from placing a
+   * waypoint under it goes on working.
+   *
+   * It spans from under the header's own offset down to the attribution, and
+   * is shrink-to-fit wide — `right: auto` — so it is exactly as wide as the
+   * rail and no wider. Its left edge is the header's left edge, which is what
+   * makes the two read as one instrument bent round a corner rather than as
+   * two things that happen to be near each other. */
   .footer {
-    align-items: flex-end;
+    top: var(--space-lg);
+    right: auto;
+    align-items: flex-start;
+    /* The rail hugs the bottom by default and centres itself only when there
+     * is height to do it in (below). Bottom-aligned it cannot reach the header
+     * at any viewport height, which is what makes this the safe default: the
+     * header's height is intrinsic and nothing here is allowed to be measured
+     * from it (docs/DESIGN.md). */
+    justify-content: flex-end;
+    flex-direction: column;
+    flex-wrap: nowrap;
     gap: var(--space-md);
     padding: 0;
     border: none;
     background: none;
     box-shadow: none;
     pointer-events: none;
+    /* Arrives from the edge it lives on, not from the bottom. */
+    animation-name: railIn;
   }
 
   .actions,
@@ -102,14 +137,12 @@
   }
 
   .actions {
+    /* The status hangs off this panel, so this is what it is positioned from. */
+    position: relative;
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: var(--space-sm);
-    /* A routing error is prose, and prose in a shrink-to-fit panel would pull
-     * this one back across the map the bar was just taken off. Past this it
-     * wraps instead. */
-    max-width: 34rem;
     padding: var(--space-sm);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -117,13 +150,57 @@
     box-shadow: var(--shadow-panel);
   }
 
-  /* Inside their own panel the two controls sit together; the auto margin is
-   * what spread them apart in the single bar. */
-  .corrections {
-    margin-left: 0;
+  .tools {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  /* A routing error is prose, and a column one control wide has no row to put
+   * prose in. So the region leaves the panel and becomes a pill beside the
+   * rail — growing away from it, and capped before it can cross the map the
+   * bar was just taken off. It is out of flow in both states, so an empty
+   * region cannot make the rail any wider: what stops it opening a row in the
+   * bar is what stops it opening a column here.
+   *
+   * Below the tools rather than beside them, which is not a matter of taste:
+   * the two correction buttons defer their labels to a tooltip on this exact
+   * side (`RouteControls`), so a pill level with them is a message with a
+   * tooltip landing on it every time the visitor reaches for undo. Level with
+   * the zoom panel there is nothing to collide with — those two buttons carry
+   * their labels on their faces — and the pill grows down into open map from
+   * there, never up towards the header, whose height nothing here is allowed
+   * to be measured from. */
+  .statusSlot {
+    position: absolute;
+    top: calc(100% + var(--space-sm));
+    left: calc(100% + var(--space-sm));
+    display: block;
+    width: max-content;
+    max-width: 22rem;
+  }
+
+  /* Chrome only when there is something inside to frame: the region stays
+   * mounted and empty the rest of the time — it is a live region, and one that
+   * is hidden and re-shown is announced unreliably — and an empty pill is a
+   * stray box drawn on the map. `> :empty` and not `:empty`, since the pulse
+   * beside "Routing…" is itself an empty element. */
+  .statusSlot:not(:has(> :empty)) {
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-panel);
+  }
+
+  /* The region carries its own bottom margin so the bar doesn't need a `gap`
+   * that would show while it is empty. Inside the pill there is nothing under
+   * it to be kept off, and the margin would just be uneven padding. */
+  .statusSlot > * {
+    margin-bottom: 0;
   }
 
   .zoom {
+    margin-left: 0;
     padding: var(--space-sm);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -132,10 +209,27 @@
   }
 }
 
+/* Enough height for the rail to sit in the middle of the map without meeting
+ * the header at the top of it — which is where it belongs, floating clear of
+ * both ends rather than pooling in a corner. Under this it stays bottom-left,
+ * and the two arrangements differ by this one line. */
+@media (min-width: 60rem) and (min-height: 38rem) {
+  .footer {
+    justify-content: center;
+  }
+}
+
 @keyframes footerIn {
   from {
     opacity: 0;
     transform: translateY(0.75rem);
+  }
+}
+
+@keyframes railIn {
+  from {
+    opacity: 0;
+    transform: translateX(-0.75rem);
   }
 }
 

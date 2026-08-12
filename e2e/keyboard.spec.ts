@@ -4,11 +4,13 @@ import { mockTiles } from './support/mock-tiles'
 import { mockRouting } from './support/mock-routing'
 import { supplyCredentials } from './support/supply-credentials'
 
-/** Drawing a route is a click-on-the-map gesture, which a keyboard cannot
- * perform. These specs cover the way round that: Leaflet's own keyboard pan
- * plus a control that drops a waypoint at the current centre. */
-
-const addWaypoint = /add waypoint at map centre/i
+/** What the keyboard can and cannot reach.
+ *
+ * Placing a waypoint is a click on the map, and there is no keyboard
+ * equivalent: the control that dropped one at the map's centre was removed as
+ * unnecessary, and with it the way to draw a route without a pointer. What the
+ * keyboard still has is the map itself — Leaflet's arrow-key pan — and every
+ * control in the two bars, including the two that take a route back apart. */
 
 function panePosition(page: Page) {
   return page.evaluate(() => {
@@ -38,45 +40,24 @@ async function panWithKeyboard(page: Page, ...keys: string[]) {
     .toBe(true)
 }
 
-test('a route can be drawn end to end without ever using a pointer', async ({ page }) => {
+/** Draws a two-waypoint route with the mouse, which is the only way to draw
+ * one. The keyboard assertions below start from a route that already exists. */
+async function drawRoute(page: Page) {
+  const map = (await page.locator('.leaflet-container').boundingBox())!
+  await page.mouse.click(map.x + map.width * 0.4, map.y + map.height * 0.4)
+  await page.mouse.click(map.x + map.width * 0.6, map.y + map.height * 0.5)
+  await expect(page.getByText('1.4 km')).toBeVisible()
+}
+
+test('the map itself is reachable from the keyboard and pans with the arrow keys', async ({
+  page,
+}) => {
   await mockTiles(page)
-  await mockRouting(page, [{ distanceMeters: 1400 }])
+  await mockRouting(page, [])
   await page.goto('/')
   await supplyCredentials(page)
 
-  const button = page.getByRole('button', { name: addWaypoint })
-  await button.focus()
-  await page.keyboard.press('Enter')
-  await expect(page.locator('path[fill="var(--color-waypoint)"]')).toHaveCount(1)
-
   await panWithKeyboard(page, 'ArrowRight', 'ArrowDown')
-  await button.focus()
-  await page.keyboard.press('Enter')
-
-  await expect(page.getByText('1.4 km')).toBeVisible()
-  await expect(page.locator('path[stroke="var(--color-route)"]')).toHaveCount(1)
-  await expect(page.locator('path[fill="var(--color-waypoint)"]')).toHaveCount(2)
-})
-
-test('each keyboard waypoint lands wherever the map has been panned to', async ({ page }) => {
-  await mockTiles(page)
-  const requests = await mockRouting(page, [{ distanceMeters: 1400 }])
-  await page.goto('/')
-  await supplyCredentials(page)
-
-  const button = page.getByRole('button', { name: addWaypoint })
-  await button.focus()
-  await page.keyboard.press('Enter')
-
-  await panWithKeyboard(page, 'ArrowRight', 'ArrowDown')
-  await button.focus()
-  await page.keyboard.press('Enter')
-
-  await expect(page.getByText('1.4 km')).toBeVisible()
-  expect(requests).toHaveLength(1)
-  // The control follows the map rather than a position fixed at load, so the
-  // pan between the two presses put the waypoints somewhere different.
-  expect(requests[0].from).not.toEqual(requests[0].to)
 })
 
 test('undo and clear are reachable and operable from the keyboard', async ({ page }) => {
@@ -84,14 +65,7 @@ test('undo and clear are reachable and operable from the keyboard', async ({ pag
   await mockRouting(page, [{ distanceMeters: 1400 }])
   await page.goto('/')
   await supplyCredentials(page)
-
-  const button = page.getByRole('button', { name: addWaypoint })
-  await button.focus()
-  await page.keyboard.press('Enter')
-  await panWithKeyboard(page, 'ArrowRight')
-  await button.focus()
-  await page.keyboard.press('Enter')
-  await expect(page.getByText('1.4 km')).toBeVisible()
+  await drawRoute(page)
 
   await page.getByRole('button', { name: /remove last waypoint/i }).focus()
   await page.keyboard.press('Enter')
@@ -102,13 +76,56 @@ test('undo and clear are reachable and operable from the keyboard', async ({ pag
   await expect(page.locator('path[fill="var(--color-waypoint)"]')).toHaveCount(0)
 })
 
+test('a correction control names itself on keyboard focus, not only under a mouse', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockTiles(page)
+  await mockRouting(page, [{ distanceMeters: 1400 }])
+  await page.goto('/')
+  await supplyCredentials(page)
+  await drawRoute(page)
+
+  // In the rail these two are icons, and what says which is which is a tooltip
+  // (docs/DESIGN.md). Bound to hover alone it would be a name the keyboard
+  // never sees — an undo arrow and a waste basket, and a guess between them.
+  const undo = page.getByRole('button', { name: /remove last waypoint/i })
+  const label = undo.locator('span')
+  await undo.focus()
+
+  await expect
+    .poll(() => label.evaluate((element) => getComputedStyle(element).opacity))
+    .toBe('1')
+})
+
+test('zooming is operable from the keyboard', async ({ page }) => {
+  await mockTiles(page)
+  await mockRouting(page, [])
+  await page.goto('/')
+  await supplyCredentials(page)
+
+  const zoomedTo = () =>
+    page.evaluate(() => {
+      const tile = document.querySelector('.leaflet-tile') as HTMLImageElement | null
+      return tile?.src.match(/\/(\d+)\/\d+\/\d+\.png/)?.[1] ?? null
+    })
+  const before = await zoomedTo()
+
+  await page.getByRole('button', { name: /zoom in/i }).focus()
+  await page.keyboard.press('Enter')
+
+  await expect.poll(zoomedTo).not.toBe(before)
+})
+
 test('a focused control shows a visible focus ring', async ({ page }) => {
   await mockTiles(page)
   await mockRouting(page, [])
   await page.goto('/')
   await supplyCredentials(page)
 
-  const button = page.getByRole('button', { name: addWaypoint })
+  // Zoom in rather than a correction control: those two are disabled until a
+  // route exists, and a disabled button takes no focus to draw a ring around.
+  const button = page.getByRole('button', { name: /zoom in/i })
   await button.focus()
 
   const outline = await button.evaluate((element) => {

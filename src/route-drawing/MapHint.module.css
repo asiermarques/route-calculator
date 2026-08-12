@@ -1,0 +1,89 @@
+/* A hint, not a control: it floats over the middle of the map — the one thing
+ * in this app allowed to, besides the waypoint options panel — because that is
+ * where the instruction applies and where the eye is on an empty map. It gets
+ * away with it by being untouchable and temporary: `pointer-events: none`
+ * means a click aimed through it lands on the map and does the very thing it
+ * is describing, and it is gone a few seconds later (`MapHint.tsx`).
+ *
+ * The band is full-width and the pill centres inside it, rather than the pill
+ * centring itself with a transform: the entrance moves the pill, and an
+ * element whose position and whose animation both want the transform property
+ * has to have one of them written in terms of the other. */
+.hint {
+  position: absolute;
+  top: 42%;
+  left: var(--space-lg);
+  right: var(--space-lg);
+  z-index: var(--z-overlay);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.pill {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-md);
+  margin: 0;
+  max-width: 22rem;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  animation: hintIn 460ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.icon {
+  grid-row: 1 / span 2;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--color-accent);
+}
+
+.lead {
+  font: var(--font-action);
+  font-size: 15px;
+  letter-spacing: var(--tracking-action);
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+.note {
+  font: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* Leaving is a state and not the end of the entrance: the hint goes both when
+ * its time is up and the moment the first waypoint lands, and only the first
+ * of those is on a schedule. */
+.leaving .pill {
+  opacity: 0;
+  transform: translateY(-0.4rem);
+  transition:
+    opacity 420ms ease,
+    transform 420ms ease;
+}
+
+@keyframes hintIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+/* Reduced motion keeps the hint and its lifetime — both are information — and
+ * drops only the movement. The timers that end it are in JavaScript for
+ * exactly this reason (`MapHint.tsx`). */
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    animation: none;
+  }
+
+  .leaving .pill {
+    transform: none;
+    transition: opacity 420ms ease;
+  }
+}

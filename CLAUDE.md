@@ -81,13 +81,23 @@ So for any new or changed UI:
   a second, visible carrier on touch (the marked waypoint is the existing
   example). Sizes Leaflet takes as numbers rather than CSS — marker radii —
   come from `useCoarsePointer`, not a constant.
-- **A new control goes in one of the two bars, not on the map.** The app's
-  name, the address search, the distance and the change-provider button share
-  the header (`src/shared/layout/AppHeader`); add-waypoint, undo/clear, the
-  routing status and zoom share the footer (`AppFooter`). Both stack to two
-  rows on a phone, and `App.tsx` fills their slots, so the slices the controls
-  come from still don't import each other. Nothing else floats over the map
-  except the waypoint options panel, which is anchored to its waypoint.
+- **A new control goes in one of the two bars, not on the map.** The bars split
+  by reporting against acting: the app's name, the address search and the
+  distance share the header (`src/shared/layout/AppHeader`); undo/clear, the
+  change-provider button, the routing status and zoom share the footer
+  (`AppFooter`), which is the toolbar. Both stack to two rows on a phone; at
+  60rem they leave the top and bottom edges and face each other across the map
+  — the footer as a rail down the left (its two panels, tools and zoom, stacked
+  one above the other), the header as a card in the top right corner.
+  `App.tsx` fills their slots, so the slices the controls come from still don't
+  import each other. Nothing else floats over the map except the waypoint
+  options panel, anchored to its waypoint, and the first-run map hint, which is
+  not a control (`pointer-events: none`, and gone within seconds). Adding a
+  control to the footer means designing it for both arrangements, not just the
+  wide one: it needs a label that fits a row on a phone *and* a face that works
+  in a column one control wide, where the label becomes a tooltip
+  (`RouteControls`) or the control is a glyph to begin with
+  (`ReopenCredentialsButton`).
 - **Cover it in `e2e/mobile.spec.ts`**, which runs at phone viewports with
   `hasTouch`/`isMobile` on, and add the control to the touch-target sweep
   there. `e2e/overlay-layout.spec.ts` separately asserts that no two overlays

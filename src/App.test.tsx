@@ -22,16 +22,16 @@ vi.mock('./route-drawing/RouteLayer', () => ({
   },
 }))
 
-vi.mock('./shared/map/ZoomControls', () => ({
-  ZoomControls: () => <div data-testid="zoom-controls" />,
+const mapHintProps = vi.fn()
+vi.mock('./route-drawing/MapHint', () => ({
+  MapHint: (props: Record<string, unknown>) => {
+    mapHintProps(props)
+    return <div data-testid="map-hint" />
+  },
 }))
 
-vi.mock('./route-drawing/AddWaypointControl', () => ({
-  AddWaypointControl: ({ onAddWaypoint }: { onAddWaypoint: (point: unknown) => void }) => (
-    <button data-testid="add-waypoint-control" onClick={() => onAddWaypoint({ lat: 1, lng: 2 })}>
-      Add waypoint at map centre
-    </button>
-  ),
+vi.mock('./shared/map/ZoomControls', () => ({
+  ZoomControls: () => <div data-testid="zoom-controls" />,
 }))
 
 vi.mock('./route-drawing/DistanceReadout', () => ({
@@ -128,7 +128,7 @@ describe('App', () => {
     expect(screen.getByTestId('map-view')).toHaveAttribute('data-dormant', 'true')
     expect(screen.queryByTestId('address-search-bar')).not.toBeInTheDocument()
     expect(screen.queryByTestId('route-layer')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('add-waypoint-control')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('route-controls')).not.toBeInTheDocument()
   })
 
   it('wakes the map up once the credentials screen is gone, and puts it back to sleep when it is reopened (US-005)', () => {
@@ -191,14 +191,59 @@ describe('App', () => {
     for (const testId of [
       'address-search-bar',
       'route-layer',
-      'add-waypoint-control',
       'distance-readout',
       'route-controls',
       'reopen-credentials-button',
       'zoom-controls',
+      'map-hint',
     ]) {
       expect(screen.getByTestId('map-view')).toContainElement(screen.getByTestId(testId))
     }
+  })
+
+  it('puts the way back to the credentials screen in the footer, beside the controls it is a peer of', () => {
+    useCredentials.mockReturnValue(
+      baseCredentials({ routingProvider: { getRoute: vi.fn() }, isCredentialsScreenOpen: false }),
+    )
+    useRoute.mockReturnValue({
+      waypoints: [],
+      path: [],
+      distanceMeters: 0,
+      isRouting: false,
+      error: null,
+      addWaypoint: vi.fn(),
+      undo,
+      clear,
+    })
+
+    render(<App />)
+
+    // The header reports the route; the footer is what it is acted on from
+    // (docs/DESIGN.md). Changing the provider is an action, and beside the
+    // distance figure it was the one control in the header that did anything.
+    const footer = screen.getByTestId('reopen-credentials-button').closest('footer')
+    expect(footer).not.toBeNull()
+    expect(footer).toContainElement(screen.getByTestId('route-controls'))
+  })
+
+  it('tells the map hint whether anything has been drawn yet, so it retires on the first waypoint', () => {
+    useCredentials.mockReturnValue(
+      baseCredentials({ routingProvider: { getRoute: vi.fn() }, isCredentialsScreenOpen: false }),
+    )
+    useRoute.mockReturnValue({
+      waypoints: [{ lat: 1, lng: 1 }],
+      path: [],
+      distanceMeters: 0,
+      isRouting: false,
+      error: null,
+      addWaypoint: vi.fn(),
+      undo,
+      clear,
+    })
+
+    render(<App />)
+
+    expect(mapHintProps).toHaveBeenCalledWith(expect.objectContaining({ routeIsEmpty: false }))
   })
 
   it('wires per-waypoint delete and move through to the same route as map clicks (004)', () => {
@@ -277,29 +322,6 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: buttonName }))
 
     expect(handler()).toHaveBeenCalled()
-  })
-
-  it('wires the keyboard waypoint control through to the same route as map clicks', async () => {
-    useCredentials.mockReturnValue(
-      baseCredentials({ routingProvider: { getRoute: vi.fn() }, isCredentialsScreenOpen: false }),
-    )
-    const addWaypoint = vi.fn()
-    useRoute.mockReturnValue({
-      waypoints: [],
-      path: [],
-      distanceMeters: 0,
-      isRouting: false,
-      error: null,
-      addWaypoint,
-      undo,
-      clear,
-    })
-    const user = userEvent.setup()
-
-    render(<App />)
-    await user.click(screen.getByTestId('add-waypoint-control'))
-
-    expect(addWaypoint).toHaveBeenCalledWith({ lat: 1, lng: 2 })
   })
 
   it('reopens the credentials screen from the running app, without unmounting the map (US-005)', async () => {

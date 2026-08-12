@@ -14,7 +14,7 @@ test('a production build opens on the credentials screen, with no address search
 
   await expect(page.getByRole('combobox', { name: /routing provider/i })).toBeVisible()
   await expect(page.getByRole('textbox', { name: /address/i })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: /add waypoint/i })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /remove last waypoint/i })).toHaveCount(0)
 })
 
 test('the map behind the credentials screen is scenery: visible, but answering nothing (FR-001)', async ({
@@ -62,7 +62,7 @@ test('submitting an empty key keeps the screen and explains what is missing (EDG
   await page.goto('/')
 
   await page.getByRole('combobox', { name: /routing provider/i }).selectOption('openrouteservice')
-  await page.getByRole('button', { name: /continue/i }).click()
+  await page.getByRole('button', { name: /start drawing/i }).click()
 
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByRole('combobox', { name: /routing provider/i })).toBeVisible()
@@ -73,7 +73,7 @@ test('submitting a whitespace-only key keeps the screen too (EDGE-003)', async (
   await page.goto('/')
 
   await page.getByLabel(/api key/i).fill('   ')
-  await page.getByRole('button', { name: /continue/i }).click()
+  await page.getByRole('button', { name: /start drawing/i }).click()
 
   await expect(page.getByRole('alert')).toBeVisible()
   // The app's own controls, not the map: the map is the backdrop this screen

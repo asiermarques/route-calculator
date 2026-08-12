@@ -18,8 +18,10 @@ output is plain static files, deployable to any static host.
   Both are accessed behind a single internal routing interface so the rest of
   the app is unaware of which one is active. In a production build, the
   active provider and its API key are supplied at runtime by the visitor, on
-  a blocking credentials screen shown before anything else — a production
-  build ships with no key at all (`src/credentials/`,
+  a blocking credentials screen shown before any of the app is reachable —
+  over the map, which is mounted but inert behind it (`docs/DESIGN.md`), and
+  which no address search or drawing control exists to operate until a key is
+  supplied. A production build ships with no key at all (`src/credentials/`,
   `docs/adr/0001-user-supplied-routing-api-key-in-browser-storage.md`). That
   screen is reachable again from within the running app, as a modal over the
   still-mounted map, so a visitor can correct a mistyped key or a wrong

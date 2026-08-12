@@ -13,21 +13,65 @@ the primary action, and to nothing else. The contrast is not decoration: a pale
 panel over pale map tiles has no edge, a dark one always does.
 
 The controls are gathered into **two bars** rather than scattered into the
-map's corners: `AppHeader` along the top for everything that describes the
-route — the app's name, the address search, the total distance, the way back to
-the credentials screen — and `AppFooter` along the bottom for everything that
-acts on it: add-waypoint, undo/clear, and the routing status. Both are in
-`src/shared/layout/`. Nothing else floats: the corner that is left is Leaflet's
-own, for its attribution. Two bars and an untouched map
+map's corners, and the split between them is *reporting* against *acting*:
+`AppHeader` for what describes the route — the app's name, the address search,
+the total distance — and `AppFooter` for everything the visitor does, which is
+undo/clear, the way back to the credentials screen, zoom, and the routing
+status. Both are in `src/shared/layout/`. Nothing else floats: the corner that
+is left is Leaflet's own, for its attribution. Two bars and an untouched map
 between them is the whole layout.
 
-On a wide screen the footer stops being a bar: at 60rem it splits into the two
-panels it is really made of — the actions at one end, zoom at the other, map
-showing through between them. A bar is the arrangement a phone forces, where
-there is no width to spend on a gap and the controls need the edges; carried on
-to a laptop it is a band of dark panel drawn across the bottom of a map the
-controls only occupy a third of. The header stays whole, because what is in it
-does fill the width it has.
+The split is what the two are, not where they sit. On a phone they are two bars,
+top and bottom. On anything wider they are two panels facing each other across
+the map: acting down the left edge, reporting in the top right corner (below).
+
+The change-provider button is in the footer and not beside the distance
+because of that split, not because of where it fits: it is a thing you press,
+and next to the figure it was the only control in a bar that otherwise only
+reports. In the footer it reads as the third item of a toolbar — remove last
+waypoint, clear, change provider — which is what it is.
+
+On a wide screen the footer stops being a bar: at 60rem the two panels it is
+really made of — the actions and zoom — stand up into a **rail down the left
+edge**, one above the other, each about one control wide. A bar is the
+arrangement a phone forces, where there is no width to spend on a column beside
+the map and the controls need the edges; carried on to a laptop it is a band of
+dark panel drawn across the bottom of a map the controls only occupy a third
+of. Stood up, the same controls give the entire bottom of the map back and cost
+one narrow column at an edge — which is what a tool palette has looked like
+since long before this app.
+
+The header goes the same way at the same width, and it is the larger half of
+the change: measured on a laptop the bar is 1408×97 against the rail's 66px of
+column. What it costs is not area — the same card stacked onto the rail would
+cover the same map — it is that a band across the width **cuts the map in
+two**, and the strip it leaves above itself is 100px deep, which is not enough
+map to draw a route in. Taken off, the map is one surface from edge to edge.
+So at 60rem the bar stands up into a **card in the top right corner**, its
+three things stacked in the order they were in across it: name, search, answer.
+
+Right, and not stacked onto the rail on the left, is arithmetic rather than
+taste. The card is about 200px tall and the rail about 300px; 500px of stacked
+panel is 85% of the column height a laptop actually has, and under about 570px
+of viewport it does not fit at all — with no fallback left, since the rail
+already spends its own on bottom-aligning. A column filled like that is a
+sidebar, which is the bottom bar turned on its side. It would also leave the
+distance boxed between a text field and a toolbar, when the figure is the
+second loudest thing on the screen by design. Facing each other across the map,
+each has a corner of its own and the map has its middle.
+
+The trade the rail makes is worth naming. On a full-viewport map the left edge
+is not dead space the way it is in a drawing tool — it is drawing surface, and
+the rail takes a 64px column of it. It buys back a band across the whole width,
+which is the larger of the two, and the panel it takes is at the edge a route
+is least often drawn against. The card makes the same trade at the opposite
+corner, and the two together take about 7% of a laptop's viewport where the two
+bars took 13%.
+
+Both are `60rem` because that is one decision, not two: below it there is
+neither the width for a column beside the map nor the width for a card that
+isn't most of the screen, and above it both are true at once. A phone is
+untouched by all of this — two bars, top and bottom, exactly as before.
 
 ## Type
 
@@ -78,13 +122,12 @@ values or bare pixel spacing in component styles.
 | `--space-xs` … `--space-lg` | `0.4rem` … `1rem` | Tight padding, default gap, panel padding, viewport-edge offset. |
 | `--radius` | `0.375rem` | Inputs, buttons. |
 | `--radius-lg` | `0.75rem` | Panels. |
-| `--radius-pill` | `999px` | The add-waypoint control. |
 | `--size-control-row` | `3rem` | Size of any interactive control, and the height of one row of them. A notch above the 44px a finger needs, deliberately — see the touch-target rule below. |
 | `--space-map-bottom` | `2.5rem` | Bottom offset that clears Leaflet's attribution strip — where the footer bar starts. |
 | `--font-ui` | `500 14px/1.45 Barlow` | All overlay UI text. |
 | `--font-ui-field` | `400 16px/1.45 Barlow` | Every `input` and `select`, and nothing else — see the field-size rule below. |
 | `--font-label` | `600 11px/1 Saira Condensed` | Uppercase micro-labels. Always paired with `--tracking-label`: condensed capitals set solid are unreadable. |
-| `--font-action` | `600 14px/1 Saira Condensed` | Button labels, uppercase — which is also what keeps a long one ("Add waypoint at map centre") on a single row on a phone. |
+| `--font-action` | `600 14px/1 Saira Condensed` | Button labels, uppercase — which is also what keeps a long one ("Remove last waypoint") on a single row on a phone. |
 | `--font-distance` | `700 clamp(2.5rem, 11vw, 4.25rem)/0.82 Saira Condensed` | The distance figure. Scales with the viewport, since the bar it sits in goes from a phone's width to a laptop's. |
 | `--tracking-label`, `--tracking-action` | `0.14em`, `0.06em` | Letter-spacing for the two uppercase styles above. |
 | `--z-overlay` | `1000` | Overlay controls above Leaflet's own panes. |
@@ -103,24 +146,69 @@ values or bare pixel spacing in component styles.
   follow are what keep that from happening, and `e2e/mobile.spec.ts` holds them
   in place at phone sizes with touch emulation on (`overlay-layout.spec.ts`
   separately checks that overlays don't cover each other at three widths).
+- **The header is a bar or a card, and the hatch has to turn with it.** The
+  texture behind it is drawn to run *along* a bar and fade out before the
+  wordmark and the figure, which is a horizontal mask. Stood up into the card
+  that mask lies behind the whole panel, including the distance — a texture
+  competing with the one number the app exists to produce. It fades down the
+  card instead, gone before the figure. The mask's stops are alpha and not
+  palette colours, which is the one place a raw value is allowed here.
 - **The bars stack before they shrink.** On a phone the header is two rows —
   the name and the distance facing each other across the first, the search
   spanning the second — because no arrangement fits a field, a button and a
   display figure on one 360px line. It becomes a single row at `44rem`, which is
   also where a phone in landscape lands. The footer does the same by wrapping:
-  add-waypoint and undo/clear share a row while they fit and take one each when
-  they don't. Nothing is positioned from either bar's height, so both are free
-  to be intrinsic.
-- **The footer is one bar or two panels, from one set of markup.** Below
-  `60rem` the `<footer>` is the panel and the wrapper around the actions is
-  `display: contents`, so the status, add-waypoint and undo/clear wrap against
-  the bar exactly as they did when it was flat. At `60rem` that wrapper becomes
-  a panel and the `<footer>` becomes the frame the two panels are placed in:
-  transparent, and `pointer-events: none`, with the panels taking their own
-  clicks back. That last part is not a detail — the frame still spans the
-  width, and an invisible strip across the bottom of the map that answers
-  clicks (and swallows them, `useDisableMapClickPropagation`) makes the gap it
-  opens look like map and behave like a panel.
+  the tool row (undo, clear, change provider) and the zoom pair share a row
+  while they fit and take one each when they don't, which on a phone is always
+  — three tools and a zoom pair are some 60px wider than a 393px screen. Nothing
+  is positioned from either bar's height, so both are free to be intrinsic.
+- **A control that wraps to its own row is still at the end of the bar it
+  wraps out of.** `justify-content` only spaces items that share a line, so the
+  zoom pair carries `margin-left: auto` instead: an auto margin collects the
+  free space of whichever line the item actually lands on. Without it the pair
+  drops to the start edge of the second row, under the tools and at the one end
+  of a phone a thumb doesn't reach.
+- **An empty live region must not open a row.** A zero-height flex item still
+  starts a flex line, and the bar's row `gap` is still drawn above whatever
+  follows it — invisible on a dark panel, and read as the controls sitting a
+  few pixels low (they were 17px from the top of the footer and 9px from the
+  bottom). The routing status is therefore `position: absolute` while it is
+  `:empty`, which takes it out of flow without taking it out of the
+  accessibility tree — `display: none` would do both, and a live region hidden
+  that way is announced unreliably when it comes back.
+- **The footer is one bar or one rail, from one set of markup.** Below `60rem`
+  the `<footer>` is the panel and the wrapper around the actions is
+  `display: contents`, so the status and undo/clear wrap against the bar
+  exactly as they did when it was flat. At `60rem` that wrapper becomes a panel
+  and the `<footer>` becomes the frame the two panels are stacked in: a
+  shrink-to-fit column down the left edge, from the header's own offset to the
+  attribution, transparent and `pointer-events: none`, with the panels taking
+  their own clicks back. That last part is not a detail — an invisible strip
+  over the map that answers clicks (and swallows them,
+  `useDisableMapClickPropagation`) makes the space it opens look like map and
+  behave like a panel.
+- **The rail hugs the bottom of its frame and only centres itself when there is
+  height for it** (`min-height: 38rem`, one extra declaration). Centred is
+  where it belongs — clear of both ends rather than pooling in a corner — but
+  the header's height is intrinsic and nothing may be positioned from it, so
+  the fallback has to be the alignment that cannot reach the header from any
+  distance, which is the one furthest from it.
+- **In the rail a correction control is an icon, and its label is one hover or
+  one focus away** (`RouteControls`). A column one control wide cannot carry
+  "Remove last waypoint", so the label leaves the face of the button and
+  becomes a tooltip beside it — on `:focus-visible` as well as `:hover`, since
+  a control whose name only ever appears to a mouse is a control the keyboard
+  operates blind. It is hidden with `opacity`, never `display: none` or
+  `visibility: hidden`: those take the label out of the accessibility tree, and
+  the label *is* the button's accessible name. There is no `aria-label`
+  anywhere in this pair, precisely so the name cannot drift from the sentence
+  on screen. The icons are the conventional pair — an undo arrow and a
+  waste basket — knowing that the arrow implies a reversibility the label
+  spends its words denying (FR-015, BR-006); the label is what settles it, and
+  it is never more than a hover away. Both arrangements carry exactly one of
+  the two: the bar draws the label and not the icon, since two icons plus two
+  labels is some 56px added to a row that already gives back its side padding
+  at `25rem` to stay on one line.
 - **Below `25rem` both bars narrow their viewport-edge offset** from
   `--space-lg` to `--space-sm`. At 360px the corrections and the zoom pair are
   a dozen pixels wider than the row they share, and without those pixels the
@@ -146,6 +234,11 @@ values or bare pixel spacing in component styles.
   of everything else — and forced the footer bar to carve a gutter around it.
   Ours calls the same `map.zoomIn()`/`zoomOut()` and reproduces the one thing
   that came with the widget: the disabled state at the ends of the zoom range.
+  Stood up in the rail the pair is `column-reverse`, so zoom in is the upper of
+  the two — where every map that has ever stacked this pair puts it, Leaflet's
+  own control included. The DOM order stays out-then-in, which is what the bar
+  needs and what a phone therefore keeps; the two are separately labelled, so
+  the order they are reached in says nothing the label doesn't.
   What is still Leaflet's along the bottom is the attribution, whose *colours*
   are brought onto this palette in `MapView.module.css` — a white strip in the
   corner of an otherwise dark instrument reads as something the page failed to
@@ -165,12 +258,34 @@ values or bare pixel spacing in component styles.
   doesn't.
 - Overlay controls (anything that sits on top of the map) use `--z-overlay`
   so they consistently stack above Leaflet's internal panes and controls.
+- **The map says how it is used, once** (`src/route-drawing/MapHint`). An
+  untouched map with a bar above it and a bar below says nothing about the
+  surface between them being the input, and the app's one instruction — a route
+  is drawn by clicking the map — has nowhere in either bar to live. So it is
+  said over the middle of the map and then taken back: a pill that names the
+  gesture in the words of the pointer in use ("Click"/"Tap", from
+  `useCoarsePointer`), and leaves on the earlier of two events — five seconds,
+  or the first waypoint. Both matter: the timer means a visitor who ignores it
+  isn't left with a label over their map, and the waypoint means acting on it
+  is what dismisses it. It never returns, including for a route cleared back
+  to empty — someone who has drawn one knows how.
+  This is the second thing allowed to float over the map, and it is allowed
+  because it is not a control: `pointer-events: none`, so the click it asks for
+  passes through it to the map underneath and does the very thing it describes.
+  Its lifetime is two `setTimeout`s rather than the end of its own animation,
+  because the fade is switched off under `prefers-reduced-motion` and a hint
+  that ends with its animation would never end for the visitor who asked for
+  less motion.
 - **Nothing may be positioned so that it covers another control**, Leaflet's
   attribution included — stacking above it is what
   `--z-overlay` does, and a control drawn over another is a control the user
   cannot press. This is now mostly a property of the two bars: inside them,
-  layout keeps the controls apart, and the only free-floating panel left is the
-  waypoint options, which anchors itself away from the edges. The bottom edge
+  layout keeps the controls apart, and the only free-floating *control* left is
+  the waypoint options panel, which anchors itself away from the edges. The map
+  hint floats too but answers no clicks, so it can't take one from anything
+  underneath — `e2e/mobile.spec.ts` still holds it clear of both bars, since a
+  hint drawn across the search field is unreadable even when it is harmless.
+  The bottom edge
   still carries Leaflet's attribution, so the footer starts above it
   (`--space-map-bottom`) and otherwise runs the full width.
   `e2e/overlay-layout.spec.ts` asserts every control stays apart at phone,
@@ -183,6 +298,18 @@ values or bare pixel spacing in component styles.
   inserted together with its first message is announced unreliably — so it is
   never `display: none`, and it carries its own margin instead of the bar
   giving it a `gap` that would show while it is empty.
+- **In the rail it is a pill hung off the side, level with the zoom panel.**
+  A routing error is prose and a column one control wide has no row for prose,
+  so the region leaves the panel — through a slot `AppFooter` owns, which is
+  `display: contents` in the bar so the region is still a direct item of it
+  there. Level with *zoom* and not with the tools, which is not a matter of
+  taste: the two correction buttons defer their labels to a tooltip on that
+  exact side, so a pill beside them is a message with a tooltip landing on it
+  every time the visitor reaches for undo. The pill grows downward into open
+  map from there, and never up towards the header. Its chrome is conditional on
+  it having something to say (`:not(:has(> :empty))`) — the region is still
+  mounted and empty the rest of the time, and an empty pill is a stray box
+  drawn on the map.
 - **The credentials screen is shown over the map, never instead of it.** It is
   a full-viewport modal on `--z-modal` — one level above `--z-overlay`, so it
   sits above every overlay control and not only the map underneath them — on
@@ -192,6 +319,19 @@ values or bare pixel spacing in component styles.
   sees before anything else, which is why it carries the app's name
   (`shared/brand/AppMark`); what it is over is the thing they came for, rather
   than a black rectangle in front of nothing.
+- **That screen introduces the app before it asks for anything.** It is the
+  first thing a visitor sees and, if they leave, the only thing — so it opens
+  with what the app does and what the key buys *them* (their own free routing
+  account: no sign-up here, no quota shared with strangers), and the button
+  says `Start drawing` rather than `Continue`, which describes the form's
+  plumbing instead of theirs. What it says about the key's safety is unchanged
+  and non-negotiable (US-004, ADR-0002) — it just no longer leads. The
+  unrestrictable-key warning keeps `--color-error` on its left edge and its
+  veil and sets its prose at normal text contrast: six red lines on a first
+  impression read as an app nervous about itself, and the fact is worth
+  reading, not surviving. Reopened over a running app it is a different errand
+  — one setting, not a first visit — so the pitch is dropped and the heading
+  names the task; the presence of `onDismiss` is what tells the two apart.
 - **The map behind that screen is dormant, and that is a functional
   requirement, not a finish** (FR-001). Drawn, and unreachable: the wrapper
   around it takes the `inert` attribute, which is what covers the tab stop
@@ -231,6 +371,14 @@ values or bare pixel spacing in component styles.
   on an ancestor creates a containing block, and every marker, overlay and
   control would be dulled along with the map, including the accent the route is
   drawn in.
+- **Dormant, the tiles are inverted rather than merely dimmed** —
+  `invert(1) grayscale(1) brightness(0.92) contrast(0.88)`, same pane, on the
+  wrapper's dormant class. A bright street map is the one thing on this palette
+  that cannot be put behind something without looking like it is being covered
+  up; turned dark it joins the instrument instead — pale roads on near black,
+  the credentials card the only lit surface. The route is in the overlay pane
+  and so is untouched by this: reopen the screen over a drawn route and the
+  accent line is still the one thing in colour.
 - **The route is two lines, not one** (`RouteLayer`): a dark casing
   (`--color-route-casing`, weight 13) under a bright core (`--color-route`,
   weight 7), both with round caps and joins. The accent alone is a pale line
@@ -298,12 +446,18 @@ values or bare pixel spacing in component styles.
   rather than reaching toward them. Editing a
   waypoint (opening its options, deleting it, arming and completing a move) is
   pointer/touch-only by deliberate decision — undo and clear remain the
-  keyboard-reachable correction path (`AddWaypointControl`'s precedent does
-  not extend here).
+  keyboard-reachable correction path. So is *placing* one, since the control
+  that dropped a waypoint at the map's centre was removed as unnecessary: what
+  the keyboard has left is Leaflet's pan, the zoom pair, and the two controls
+  that take a route back apart (`e2e/keyboard.spec.ts`).
 - **Motion is used once per event, never as ambience.** The header, the search
-  and the map controls arrive in a short staggered entrance on load; the
+  and the map controls arrive in a short staggered entrance on load; the map
+  hint rises in behind them and fades out when its time is up; the
   distance figure and the rule under it replay a 300–460ms entrance whenever a
   new total lands, which is the confirmation that the number changed on a
   screen with a map moving under it; the routing status pulses while a segment
-  is in flight. Every one of them is switched off under
-  `prefers-reduced-motion: reduce`, and none of them gates an interaction.
+  is in flight; the credentials card rises into place on each showing of the
+  screen, and the map behind it takes 420ms to dim into (and back out of) its
+  dormant state, which is the same event seen from the other side. Every one of
+  them is switched off under `prefers-reduced-motion: reduce`, and none of them
+  gates an interaction.

@@ -4,7 +4,7 @@ import { AppHeader } from './shared/layout/AppHeader'
 import { AppFooter } from './shared/layout/AppFooter'
 import { AddressSearchBar } from './address-search/AddressSearchBar'
 import { RouteLayer } from './route-drawing/RouteLayer'
-import { AddWaypointControl } from './route-drawing/AddWaypointControl'
+import { MapHint } from './route-drawing/MapHint'
 import { DistanceReadout } from './route-drawing/DistanceReadout'
 import { RoutingStatus } from './route-drawing/RoutingStatus'
 import { useRoute } from './route-drawing/useRoute'
@@ -26,7 +26,10 @@ type RoutePlannerProps = {
  *
  * The two bars are the same arrangement: `AppHeader` and `AppFooter` are
  * shells that know where a control goes, and this is the only place that knows
- * which slice each of them comes from. */
+ * which slice each of them comes from. The header reports the route, the
+ * footer is the toolbar it is acted on from — which is why the way back to the
+ * credentials screen is a `settings` slot down there rather than beside the
+ * distance (docs/DESIGN.md). */
 function RoutePlanner({ routingProvider, onReopenCredentials }: RoutePlannerProps) {
   const route = useRoute(routingProvider)
   const hasWaypoints = route.waypoints.length > 0
@@ -36,7 +39,6 @@ function RoutePlanner({ routingProvider, onReopenCredentials }: RoutePlannerProp
       <AppHeader
         search={<AddressSearchBar />}
         readout={<DistanceReadout distanceMeters={route.distanceMeters} />}
-        actions={<ReopenCredentialsButton onClick={onReopenCredentials} />}
       />
       <RouteLayer
         waypoints={route.waypoints}
@@ -45,8 +47,8 @@ function RoutePlanner({ routingProvider, onReopenCredentials }: RoutePlannerProp
         onDeleteWaypoint={route.deleteWaypoint}
         onMoveWaypoint={route.moveWaypoint}
       />
+      <MapHint routeIsEmpty={!hasWaypoints} />
       <AppFooter
-        add={<AddWaypointControl onAddWaypoint={route.addWaypoint} />}
         corrections={
           <RouteControls
             canUndo={hasWaypoints}
@@ -55,6 +57,7 @@ function RoutePlanner({ routingProvider, onReopenCredentials }: RoutePlannerProp
             onClear={route.clear}
           />
         }
+        settings={<ReopenCredentialsButton onClick={onReopenCredentials} />}
         status={<RoutingStatus isRouting={route.isRouting} error={route.error} />}
         zoom={<ZoomControls />}
       />
