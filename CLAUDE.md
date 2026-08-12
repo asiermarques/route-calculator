@@ -1,147 +1,101 @@
 # CLAUDE.md
 
-Conventions for this project. Read `docs/PRODUCT.md` and `docs/ARCHITECTURE.md`
-first — this file is about *how* to build, not *what*.
+How to build in this repo. Read `docs/PRODUCT.md` (what) and
+`docs/ARCHITECTURE.md` (shape and constraints) first; `docs/DESIGN.md` for any
+UI work, `docs/UBIQUITOUS_LANGUAGE.md` for naming.
 
 ## Stack
 
-React + TypeScript, bundled with Vite. Leaflet (via `react-leaflet`) for the
-map. No backend — see `docs/ARCHITECTURE.md`.
+React + TypeScript, Vite. Leaflet via `react-leaflet`. No backend — the browser
+calls Nominatim, the tile host and the routing provider directly.
 
 ## Code organisation
 
-Vertical slices by feature under `src/`:
+Vertical slices under `src/`; each owns its components, hooks, service calls
+and tests. A slice may import from `src/shared/`; **slices never import each
+other** — shared state and composition live in `App.tsx`.
 
-- `src/shared/` — cross-cutting concerns used by more than one slice: the map
-  instance/context, build-time configuration, the routing-provider interface,
-  the design tokens and fonts, the app's name/mark (`shared/brand/`), the zoom
-  controls, and the header and footer bars the slices' controls are composed
-  into (`shared/layout/`). Nothing feature-specific lives here.
-- `src/address-search/` — the address search bar and Nominatim client.
-- `src/locate-position/` — the locate control: one reading from the browser's
-  Geolocation API per press, centring the map. Address search's sibling in
-  the header bar; the two share a row but not an import
-  (`005-locate-visitor-position`).
-- `src/route-drawing/` — waypoints, snapped segments, distance (later slices).
-- `src/route-correction/` — undo/clear (later slice).
-- `src/credentials/` — the credentials screen and the in-memory routing
-  credential state (`useCredentials`) that gates the app in a production
-  build. See
-  `docs/adr/0001-user-supplied-routing-api-key-in-browser-storage.md`.
-
-Each slice owns its own components, hooks, service calls, and tests. A slice
-may import from `src/shared/`; slices do not import from each other.
+- `src/shared/` — map instance/context, config, routing-provider interface,
+  HTTP helpers (`http/`), outbound origins and CSP (`net/`), design tokens and
+  fonts (`design/`), name/mark (`brand/`), zoom controls, and the header/footer
+  bars (`layout/`). Nothing feature-specific.
+- `src/address-search/` — search bar + Nominatim client.
+- `src/locate-position/` — locate control (one Geolocation reading per press).
+- `src/route-drawing/` — waypoints, segments, distance, routing status, hint.
+  `useRoute` is the single owner of route state.
+- `src/route-correction/` — undo/clear controls.
+- `src/credentials/` — credentials screen and `useCredentials`, which gates a
+  production build (`docs/adr/0001-…`).
 
 ## Testing
 
-- **Unit/integration**: Vitest + React Testing Library. Colocated with source
-  as `*.test.ts(x)`. Network calls (Nominatim, routing providers) are mocked
-  with MSW — never hit real third-party services from this suite.
-- **E2E**: Playwright, specs under `e2e/`. Runs against a real production
-  build (`npm run build && npm run preview`). Third-party network calls
-  (Nominatim, tile server, routing provider) are intercepted with
-  `page.route(...)` and given deterministic fixture responses — the e2e suite
-  must be able to run offline and must not depend on live third-party
-  availability or quota.
-- Leaflet does real layout/canvas work that jsdom cannot do reliably. Unit
-  tests assert *wiring* (props passed to `react-leaflet` components, mocked
-  where needed); real pan/zoom/tile-load behaviour is asserted in e2e only.
-- Run `npm test` for unit/integration, `npm run e2e` for e2e (first run:
-  `npm run e2e:install`). Both must be green before a task is done.
+Both suites must be green before a task is done.
 
-## Design tokens
+- `npm test` — Vitest + React Testing Library, colocated `*.test.ts(x)`.
+  Network mocked with MSW; never hit real third-party services.
+- `npm run e2e` — Playwright, `e2e/` (first run: `npm run e2e:install`). Runs
+  against a real production build. Third-party calls are intercepted with
+  `page.route(...)` and fixture responses: the suite must run offline.
+- `npm run lint` (oxlint) and `npm run build` (`tsc -b && vite build`).
+- jsdom has no layout. Unit tests assert *wiring* (props passed to
+  `react-leaflet`); real pan/zoom/tile/layout behaviour is e2e only.
 
-Any UI work follows `docs/DESIGN.md`. No raw colour/utility values outside
-tokens — including shadows and tints, which have tokens of their own.
+## UI
 
-Fonts are **self-hosted** from `public/fonts/` (`src/shared/design/fonts.css`).
-Never link a font CDN: it is a third-party origin on a page that handles a
-visitor's routing key, and the production CSP allows `font-src 'self'` only.
+Follow `docs/DESIGN.md` — read its "Rules" section before changing any size or
+offset. No raw colour, spacing, shadow or tint values outside tokens.
 
-## Mobile first
+Fonts are self-hosted from `public/fonts/` (`src/shared/design/fonts.css`).
+Never link a font CDN: production CSP allows `font-src 'self'` only.
 
-A phone is the target this UI is designed against, not a size it is checked at
-afterwards. This app makes that easy to get wrong: the map fills the viewport
-and every control floats on top of it absolutely positioned, so a small screen
-produces no reflow, no overflow warning and no error — controls simply become
-too small to hit, or drift past an edge no scrollbar reaches. Nothing tells you
-except looking.
+**Mobile first.** The map fills the viewport and every control floats over it
+absolutely, so a phone produces no reflow, no overflow and no error — controls
+just become unhittable or drift off an edge. Nothing tells you except looking.
 
-So for any new or changed UI:
-
-- **Design the phone layout first**, then let it widen. A layout worked out at
-  desktop width and then squeezed is how controls end up overlapping and panels
-  end up unreachable.
-- **Every interactive control gets `min-height: var(--size-control-row)`**
-  (48px — a notch above the 44px a finger needs, see `docs/DESIGN.md`) —
-  buttons, text fields, selects. `input` and `select` also take
-  `--font-ui-field` (16px), which is what stops mobile Safari zooming the page
-  in on focus and never zooming back out.
-- **Any panel that can outgrow the viewport must scroll to both ends.** Centre
-  it with `margin: auto` on the panel, never with `align-items`/
-  `justify-content` on the scroller — a centred flex item overflows the start
-  edge too, and that half cannot be scrolled to.
-- **Touch has no hover and no cursor.** Anything the cursor communicates needs
-  a second, visible carrier on touch (the marked waypoint is the existing
-  example). Sizes Leaflet takes as numbers rather than CSS — marker radii —
-  come from `useCoarsePointer`, not a constant.
-- **A new control goes in one of the two bars, not on the map.** The bars split
-  by reporting against acting: the app's name, the address search and the
-  distance share the header (`src/shared/layout/AppHeader`); undo/clear, the
-  change-provider button, the routing status and zoom share the footer
-  (`AppFooter`), which is the toolbar. Both stack to two rows on a phone; at
-  60rem they leave the top and bottom edges and face each other across the map
-  — the footer as a rail down the left (its two panels, tools and zoom, stacked
-  one above the other), the header as a card in the top right corner.
-  `App.tsx` fills their slots, so the slices the controls come from still don't
-  import each other. Nothing else floats over the map except the waypoint
-  options panel, anchored to its waypoint, and the first-run map hint, which is
-  not a control (`pointer-events: none`, and gone within seconds). Adding a
-  control to the footer means designing it for both arrangements, not just the
-  wide one: it needs a label that fits a row on a phone *and* a face that works
-  in a column one control wide, where the label becomes a tooltip
-  (`RouteControls`) or the control is a glyph to begin with
-  (`ReopenCredentialsButton`).
-- **Cover it in `e2e/mobile.spec.ts`**, which runs at phone viewports with
-  `hasTouch`/`isMobile` on, and add the control to the touch-target sweep
-  there. `e2e/overlay-layout.spec.ts` separately asserts that no two overlays
-  cover each other at phone, tablet and desktop widths — a new overlay belongs
-  in its list. Unit tests cannot catch any of this: jsdom has no layout.
-- Read `docs/DESIGN.md` "Rules" before changing a size or an offset. Both bars
-  are built from `--size-control-row`, so changing a control's height without
-  going through that token silently changes how the bar around it stacks and
-  wraps.
+- Design the phone layout first, then let it widen.
+- Every interactive control: `min-height: var(--size-control-row)` (48px).
+  `input`/`select` also take `--font-ui-field` (16px), which stops mobile
+  Safari zooming in on focus and never back out.
+- A panel that can outgrow the viewport centres with `margin: auto` on the
+  panel, never `align-items`/`justify-content` on the scroller — a centred flex
+  item overflows the start edge too, and that half is unreachable.
+- Touch has no hover and no cursor: anything the cursor communicates needs a
+  second visible carrier. Sizes Leaflet takes as numbers (marker radii) come
+  from `useCoarsePointer`.
+- **A new control goes in one of the two bars, not on the map.** Reporting in
+  the header (`shared/layout/AppHeader`: name, address search, distance),
+  acting in the footer (`AppFooter`: undo/clear, change provider, routing
+  status, zoom). `App.tsx` fills their slots. Both stack to two rows on a phone
+  and at 60rem become a left rail (footer) facing a top-right card (header) —
+  design for both: a label that fits a phone row *and* a face that works one
+  control wide, where the label becomes a tooltip (`RouteControls`) or the
+  control is already a glyph (`ReopenCredentialsButton`).
+- Only two things float over the map besides the bars: the waypoint options
+  panel and the first-run `MapHint` (`pointer-events: none`, self-dismissing).
+- Cover it in `e2e/mobile.spec.ts` (phone viewports, `hasTouch`/`isMobile`) and
+  add it to the touch-target sweep; add any new overlay to
+  `e2e/overlay-layout.spec.ts`'s list.
 
 ## Configuration
 
-The routing provider and its API key are supplied by the visitor at runtime,
-via the credentials screen (`src/credentials/`) — a production build embeds
-no key. `VITE_ROUTING_PROVIDER`/`VITE_ROUTING_API_KEY` (Vite
-`import.meta.env`, documented in `.env.example`) are a **development-only**
-convenience that seeds the same state so `npm run dev` doesn't block on the
-screen; they have no effect on a production build even if set at build time.
-Never commit real API keys. See `docs/ARCHITECTURE.md` for the constraints
-that follow from a key that can never be kept secret from the browser it
-runs in.
+The routing provider and key are supplied by the visitor at runtime
+(`src/credentials/`); a production build embeds no key.
+`VITE_ROUTING_PROVIDER`/`VITE_ROUTING_API_KEY` (`.env.example`) are a
+**development-only** convenience that seeds the same state — no effect on a
+production build even if set. Never commit real keys.
 
 ## Prohibited patterns
 
-- No transactions/persistence of any kind — this app has none, by design.
-- No hand-rolled request-body validation — not applicable (no backend), but if
-  a shared parsing/validation helper is introduced for external API responses,
-  keep it in `src/shared/`, not duplicated per slice.
-- No `TODO` placeholders for in-scope work.
-- No feature flags or "for later" parameters.
-- **No third-party script loaded into the app's origin** — no analytics, chat
-  widget, heatmap, embedded player, or similar — for as long as the app
-  handles a visitor's routing API key. This is a security invariant, not a
-  style preference: the production Content-Security-Policy
-  (`src/shared/net/contentSecurityPolicy.ts`) is what stands between script
-  running on this origin and a visitor's key leaving it, and third-party code
-  on the origin is the realistic way that policy gets defeated from the
-  inside. See `docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`.
-- **No API key written to `console`, to an error message, or to any
-  telemetry/error-reporting destination** — the current provider and geocoding
-  errors report only what service failed and how (never the key or the full
-  request URL), and any future error-reporting integration must preserve that
-  rather than capture the raw request (`docs/adr/0002-restrict-and-contain-the-browser-held-routing-key.md`).
+- **No third-party script on this origin** — no analytics, chat widget,
+  heatmap, embedded player. Security invariant, not style: the production CSP
+  (`src/shared/net/contentSecurityPolicy.ts`) is what keeps a visitor's key
+  from leaving, and third-party code is how it gets defeated from the inside
+  (`docs/adr/0002-…`).
+- **No API key in `console`, an error message, or any telemetry/error-reporting
+  destination.** Errors name the service that failed and how — never the key or
+  the full request URL (`docs/adr/0002-…`).
+- No persistence of any kind: no localStorage, cookies or server storage.
+- External-response parsing goes through `src/shared/http/parse.ts`, not
+  duplicated per slice.
+- No `TODO` placeholders for in-scope work; no feature flags or "for later"
+  parameters.
