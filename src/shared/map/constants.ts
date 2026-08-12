@@ -17,3 +17,11 @@ export const DEFAULT_ZOOM = 14
 export const OSM_TILE_URL = `${OSM_TILE_ORIGIN_PATTERN.replace('*', '{s}')}/{z}/{x}/{y}.png`
 export const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+
+/** Zoom either of the app's two ways to *position* the map — address search
+ * and locate (`005-locate-visitor-position`) — jump to on a match: street
+ * level, closer than `DEFAULT_ZOOM`, because both are answering "put me on
+ * this address/position", not "show me this city". Shared so the two
+ * positioning actions can't drift to different zooms while staying in their
+ * own slices (`src/address-search/`, `src/locate-position/`). */
+export const MATCH_ZOOM = 16

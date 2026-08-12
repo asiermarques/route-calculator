@@ -3,10 +3,10 @@ import type { FormEvent } from 'react'
 import { useMap } from 'react-leaflet'
 import { geocodeAddress } from './geocode'
 import { useDisableMapClickPropagation } from '../shared/map/useDisableMapClickPropagation'
+import { MATCH_ZOOM } from '../shared/map/constants'
 import a11y from '../shared/design/a11y.module.css'
 import styles from './AddressSearchBar.module.css'
 
-const MATCH_ZOOM = 16
 const ERROR_ID = 'address-search-error'
 
 type Status = { kind: 'idle' } | { kind: 'searching' } | { kind: 'error'; message: string }

@@ -1,13 +1,21 @@
 /* The search sits inside the header bar (`shared/layout/AppHeader`), which
  * places it — so this is a row of controls, not a panel of its own: a second
  * bordered box nested in the first is the classic way an overlay ends up
- * looking like two overlays. */
+ * looking like two overlays.
+ *
+ * It shares that row with the locate control (`005-locate-visitor-position`)
+ * beside it, so it claims the row's space rather than assuming it is the
+ * row's only content: `flex: 1 1 auto` grows to fill what locate doesn't
+ * need, and `min-width: 0` is what lets it shrink below its own content width
+ * on a narrow phone — a flex item's automatic minimum is its content size
+ * otherwise, which is wider than the space there is to give it. */
 .bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-sm);
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   font: var(--font-ui);
   color: var(--color-text);
 }

@@ -8,10 +8,10 @@ builder for a run, ride or walk — so the figure is one you can trust.
 No account, no tracking, nothing saved: the route lives in the open tab and
 that is all. See `docs/PRODUCT.md` for what this is and isn't.
 
-**Status: usable.** Address search, click-to-draw routing with a live total,
-per-waypoint delete and move, undo/clear, and — on a public deploy — a
-credentials screen where each visitor supplies their own routing key. Plans
-and requirements for each of those live in `.workflow/`.
+**Status: usable.** Address search, locate-me, click-to-draw routing with a
+live total, per-waypoint delete and move, undo/clear, and — on a public
+deploy — a credentials screen where each visitor supplies their own routing
+key. Plans and requirements for each of those live in `.workflow/`.
 
 ## Quick start
 
@@ -32,6 +32,13 @@ the same credentials screen a production build shows every visitor.
 
 - **Find where you're going.** Type an address in the header bar and press
   Search. This only moves the map — it never places a waypoint.
+- **Or locate yourself.** The moment the map is usable it reads your current
+  position from the browser once on its own, asking permission on the spot if
+  it hasn't already been given, and centres the map on it — the same "moves
+  the map only" rule as the address search. The button beside Search reads it
+  again on every press afterwards; a failed automatic reading is silent, a
+  failed press says why. Only exists where the browser can supply a position
+  at all.
 - **Draw the route.** Click (or tap) the map to add a waypoint — a hint over an
   empty map says so, and gets out of the way once you have. From the second
   one on, each new segment is routed along real streets, and the total in the

@@ -48,8 +48,19 @@
   min-width: 0;
 }
 
+/* Two controls share this row — the address search and, beside it, locate
+ * (`005-locate-visitor-position`) — both ways to put the map somewhere rather
+ * than to act on the route, which is why they sit together here and not in
+ * the footer. `flex-wrap` is what lets the locate control's own failure
+ * message claim a line of its own with `flex-basis: 100%`
+ * (`LocateButton.module.css`), the same technique the address search already
+ * uses for its own message inside its form. */
 .search {
   grid-area: search;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
   min-width: 0;
 }
 

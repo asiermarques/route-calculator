@@ -1,0 +1,52 @@
+/* Sits in the header bar (`shared/layout/AppHeader`), which places it beside
+ * the address search — the two share one flex row there, and this wrapper is
+ * `display: contents` so the button and, when it appears, the failure message
+ * below are direct items of *that* row rather than of a box of their own.
+ * That is what lets the message claim the row's full width with
+ * `flex-basis: 100%` the same way the address search's own message already
+ * does inside its form (`AddressSearchBar.module.css`) — two controls using
+ * one technique rather than two different ones. */
+.wrapper {
+  display: contents;
+}
+
+.button {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-row);
+  height: var(--size-control-row);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+.button:hover:not(:disabled) {
+  color: var(--color-accent);
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-raised);
+}
+
+.button:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.message {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-error);
+}

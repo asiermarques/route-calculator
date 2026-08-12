@@ -62,6 +62,7 @@ function appControls(page: Page) {
   return [
     page.getByRole('textbox', { name: /address/i }),
     page.getByRole('button', { name: /^search$/i }),
+    page.getByRole('button', { name: /locate/i }),
     page.getByRole('button', { name: /remove last waypoint/i }),
     page.getByRole('button', { name: /^clear$/i }),
     page.getByRole('button', { name: /change routing provider/i }),

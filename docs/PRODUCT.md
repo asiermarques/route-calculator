@@ -35,6 +35,18 @@ tracking.
 ## In scope
 
 - Address search that centres the map.
+- Locate: reads the visitor's current position from the browser and centres
+  the map on it — a second way to position the map for when a route starts
+  where the visitor already is, and typing a street name they may not know
+  (away from home, say) would be the only alternative. Read once
+  automatically the moment the map becomes usable — asking the browser's
+  permission on the spot if it hasn't already been given — and again on every
+  press of the control afterwards; a failed automatic reading is silent
+  (the map simply stays where it was), a failed press says why. Never a
+  continuous watch, and never repeated on its own beyond that one automatic
+  reading per load; it moves the map only, never places a waypoint, and
+  nothing about the position is stored or sent anywhere
+  (`005-locate-visitor-position`).
 - Click-to-add waypoints with street snapping, with a hint over an empty map
   saying so — the map is the input and nothing else on screen says it — which
   retires itself after a few seconds or on the first waypoint, whichever comes

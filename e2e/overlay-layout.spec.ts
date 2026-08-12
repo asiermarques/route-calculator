@@ -176,6 +176,7 @@ for (const viewport of VIEWPORTS) {
     const named: Array<[string, Box]> = []
     for (const [name, locator] of [
       ['search', page.getByRole('textbox', { name: /address/i })],
+      ['locate', page.getByRole('button', { name: /locate/i })],
       ['distance', page.getByRole('status').filter({ hasText: /km/ })],
       ['routing status', page.getByRole('status').filter({ hasText: /could not find/i })],
       ['undo', page.getByRole('button', { name: /remove last waypoint/i })],

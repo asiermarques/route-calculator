@@ -3,6 +3,7 @@ import { ZoomControls } from './shared/map/ZoomControls'
 import { AppHeader } from './shared/layout/AppHeader'
 import { AppFooter } from './shared/layout/AppFooter'
 import { AddressSearchBar } from './address-search/AddressSearchBar'
+import { LocateButton } from './locate-position/LocateButton'
 import { RouteLayer } from './route-drawing/RouteLayer'
 import { MapHint } from './route-drawing/MapHint'
 import { DistanceReadout } from './route-drawing/DistanceReadout'
@@ -38,6 +39,7 @@ function RoutePlanner({ routingProvider, onReopenCredentials }: RoutePlannerProp
     <>
       <AppHeader
         search={<AddressSearchBar />}
+        locate={<LocateButton />}
         readout={<DistanceReadout distanceMeters={route.distanceMeters} />}
       />
       <RouteLayer

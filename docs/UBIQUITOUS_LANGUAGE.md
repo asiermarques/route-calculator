@@ -33,6 +33,7 @@ thing.
 | --- | --- | --- |
 | **Map** | The full-viewport OpenStreetMap view that is also the app's only drawing surface. | Canvas, view, viewport |
 | **Address search** | Geocoding a typed address to move the map to it — it never places a waypoint. | Destination search, find route, go to |
+| **Locate** | Reading the visitor's current position from the browser and centring the map on it — the address search's sibling: it moves the map and nothing else, never places a waypoint, and is never a continuous watch. Happens once automatically the moment the map becomes usable, and again on every press of the control afterwards. | GPS, find me, track, geolocate |
 | **Match** | The single geocoding result the map centres on. | Result, hit, place |
 | **Dormant map** | The map while it is drawn but answering no pointer, key or tab stop, which is how it sits behind the credentials screen. | Disabled, frozen, locked |
 
@@ -54,7 +55,7 @@ about where something goes.
 
 | Term | Definition | Aliases to avoid |
 | --- | --- | --- |
-| **Header bar** | The top panel, which *reports*: the app's name, the address search, the total distance. | Top bar, nav, toolbar |
+| **Header bar** | The top panel, which *reports*: the app's name, the address search, the locate control beside it, and the total distance. | Top bar, nav, toolbar |
 | **Footer toolbar** | The bottom panel, which *acts*: remove last waypoint, clear, change provider, zoom, and the routing status. | Bottom bar, footer bar, action bar |
 | **Distance readout** | The display-sized total distance in the header bar. | Counter, odometer, tracker |
 | **Routing status** | The live region in the footer toolbar saying a segment is in flight, or why one failed. | Toast, notification, alert |

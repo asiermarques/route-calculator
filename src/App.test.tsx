@@ -14,6 +14,10 @@ vi.mock('./address-search/AddressSearchBar', () => ({
   AddressSearchBar: () => <div data-testid="address-search-bar" />,
 }))
 
+vi.mock('./locate-position/LocateButton', () => ({
+  LocateButton: () => <div data-testid="locate-button" />,
+}))
+
 const routeLayerProps = vi.fn()
 vi.mock('./route-drawing/RouteLayer', () => ({
   RouteLayer: (props: Record<string, unknown>) => {
@@ -127,6 +131,7 @@ describe('App', () => {
     // it a drawing surface: what FR-001 holds back is the app, not the view.
     expect(screen.getByTestId('map-view')).toHaveAttribute('data-dormant', 'true')
     expect(screen.queryByTestId('address-search-bar')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('locate-button')).not.toBeInTheDocument()
     expect(screen.queryByTestId('route-layer')).not.toBeInTheDocument()
     expect(screen.queryByTestId('route-controls')).not.toBeInTheDocument()
   })
@@ -190,6 +195,7 @@ describe('App', () => {
     expect(screen.getByTestId('map-view')).toBeInTheDocument()
     for (const testId of [
       'address-search-bar',
+      'locate-button',
       'route-layer',
       'distance-readout',
       'route-controls',
@@ -199,6 +205,30 @@ describe('App', () => {
     ]) {
       expect(screen.getByTestId('map-view')).toContainElement(screen.getByTestId(testId))
     }
+  })
+
+  it('puts the locate control in the header, beside the address search it is a peer of (005)', () => {
+    useCredentials.mockReturnValue(
+      baseCredentials({ routingProvider: { getRoute: vi.fn() }, isCredentialsScreenOpen: false }),
+    )
+    useRoute.mockReturnValue({
+      waypoints: [],
+      path: [],
+      distanceMeters: 0,
+      isRouting: false,
+      error: null,
+      addWaypoint: vi.fn(),
+      undo,
+      clear,
+    })
+
+    render(<App />)
+
+    // Both position the map rather than act on the route, which is why they
+    // share the header and not the footer (docs/DESIGN.md).
+    const header = screen.getByTestId('locate-button').closest('header')
+    expect(header).not.toBeNull()
+    expect(header).toContainElement(screen.getByTestId('address-search-bar'))
   })
 
   it('puts the way back to the credentials screen in the footer, beside the controls it is a peer of', () => {

@@ -18,6 +18,10 @@ Vertical slices by feature under `src/`:
   controls, and the header and footer bars the slices' controls are composed
   into (`shared/layout/`). Nothing feature-specific lives here.
 - `src/address-search/` — the address search bar and Nominatim client.
+- `src/locate-position/` — the locate control: one reading from the browser's
+  Geolocation API per press, centring the map. Address search's sibling in
+  the header bar; the two share a row but not an import
+  (`005-locate-visitor-position`).
 - `src/route-drawing/` — waypoints, snapped segments, distance (later slices).
 - `src/route-correction/` — undo/clear (later slice).
 - `src/credentials/` — the credentials screen and the in-memory routing

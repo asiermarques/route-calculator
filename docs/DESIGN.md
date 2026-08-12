@@ -31,6 +31,24 @@ and next to the figure it was the only control in a bar that otherwise only
 reports. In the footer it reads as the third item of a toolbar — remove last
 waypoint, clear, change provider — which is what it is.
 
+The locate control (`005-locate-visitor-position`) reads the split the other
+way and still lands in the header. It is also pressable, like change-provider,
+but what it does with a reading — its own or the one it takes automatically
+the moment the map becomes usable, which is what raises the browser's own
+permission prompt — is put the map somewhere, which is what the header
+already does for the address search beside it. Reporting against acting
+isn't really the question for either of the two search controls; positioning
+against acting is, and the map is positioned from the header while the route
+is acted on from the footer. Locate sits in the search row rather than beside
+the distance for the same reason change-provider sits in the footer's tool
+row rather than beside it: it's a peer of the address search, not of the
+figure.
+
+The two controls trade a technique as well as a row. Locate's own failure
+message uses the same `flex-basis: 100%` line-break the address search
+already used for its own — one pattern serving both rather than two, now that
+there are two controls in the row to carry it (see "The search row" below).
+
 On a wide screen the footer stops being a bar: at 60rem the two panels it is
 really made of — the actions and zoom — stand up into a **rail down the left
 edge**, one above the other, each about one control wide. A bar is the
@@ -153,6 +171,19 @@ values or bare pixel spacing in component styles.
   competing with the one number the app exists to produce. It fades down the
   card instead, gone before the figure. The mask's stops are alpha and not
   palette colours, which is the one place a raw value is allowed here.
+- **The search row is two controls sharing one line, not one stretched to fit
+  both.** The address search used to be the only thing in its grid area, sized
+  with `width: 100%`; locate (`005-locate-visitor-position`) landed beside it,
+  so the area became a `flex-wrap` row and the search form gave up `width:
+  100%` for `flex: 1 1 auto; min-width: 0` — grow to fill what locate doesn't
+  need, shrink below its own content width on a narrow phone, which a flex
+  item can't do on its automatic minimum otherwise. Locate's own failure
+  message reuses the address search's own trick for breaking onto a line of
+  its own — `flex-basis: 100%` inside a `flex-wrap` row of *definite* width —
+  rather than inventing a second way to do the same thing; its wrapping `div`
+  is `display: contents` so the button and the message are direct items of the
+  search row, the same device `AppFooter` uses to keep its own wrapped
+  controls direct items of the bar.
 - **The bars stack before they shrink.** On a phone the header is two rows —
   the name and the distance facing each other across the first, the search
   spanning the second — because no arrangement fits a field, a button and a
