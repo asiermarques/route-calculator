@@ -1,4 +1,5 @@
 import { useDisableMapClickPropagation } from '../shared/map/useDisableMapClickPropagation'
+import { usePendingIndicator } from './usePendingIndicator'
 import styles from './RoutingStatus.module.css'
 
 type RoutingStatusProps = {
@@ -15,13 +16,21 @@ type RoutingStatusProps = {
  * Mounted even with nothing to report, so assistive technology is already
  * observing the region when a message arrives — a live region inserted
  * together with its first message is announced unreliably. Empty, it has no
- * panel, no size, and no gap around it: see `.status:not(:empty)`. */
+ * panel, no size, and no gap around it: see `.status:not(:empty)`.
+ *
+ * "Routing…" is held back until the request has been in flight long enough to
+ * be worth saying, and then held on screen long enough to be read
+ * (`usePendingIndicator`). A provider that answers in one frame would otherwise
+ * open and close a row of the footer bar between two paints, which is a flicker
+ * of the whole toolbar rather than feedback. The *error* is not deferred: a
+ * failure is shown the moment it is known. */
 export function RoutingStatus({ isRouting, error }: RoutingStatusProps) {
   const ref = useDisableMapClickPropagation<HTMLDivElement>()
+  const showRouting = usePendingIndicator(isRouting)
 
   return (
     <div ref={ref} className={styles.status} role="status">
-      {isRouting && (
+      {showRouting && (
         <span className={styles.routing}>
           <span className={styles.pulse} aria-hidden="true" />
           Routing…

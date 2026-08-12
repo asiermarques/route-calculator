@@ -388,6 +388,17 @@ values or bare pixel spacing in component styles.
   inserted together with its first message is announced unreliably — so it is
   never `display: none`, and it carries its own margin instead of the bar
   giving it a `gap` that would show while it is empty.
+- **Being a row of the bar is what makes "Routing…" cost something to say, so
+  it is only said when it is worth saying** (`usePendingIndicator`). The message
+  waits 200ms for the request to still be in flight, and once shown it stays
+  400ms. Without the threshold a provider that answers in one frame opens the
+  row and closes it between two paints: the bar grows 26px and shrinks again,
+  which reads as the whole toolbar flickering rather than as feedback — and it
+  is 40% of the bar's height now that the tools are glyphs and it is one row
+  tall. Without the hold, the same flicker happens at the far end of a request
+  that only just crossed the threshold. It is also a live region, and one that
+  comes and goes inside a frame is announced erratically. **The error is not
+  deferred**: a failure is shown the moment it is known.
 - **In the rail it is a pill hung off the side, level with the zoom panel.**
   A routing error is prose and a column one control wide has no row for prose,
   so the region leaves the panel — through a slot `AppFooter` owns, which is
@@ -546,7 +557,8 @@ values or bare pixel spacing in component styles.
   distance figure and the rule under it replay a 300–460ms entrance whenever a
   new total lands, which is the confirmation that the number changed on a
   screen with a map moving under it; the routing status pulses while a segment
-  is in flight; the credentials card rises into place on each showing of the
+  is in flight, once it has been in flight long enough to be worth mentioning
+  (above); the credentials card rises into place on each showing of the
   screen, and the map behind it takes 420ms to dim into (and back out of) its
   dormant state, which is the same event seen from the other side. Every one of
   them is switched off under `prefers-reduced-motion: reduce`, and none of them
