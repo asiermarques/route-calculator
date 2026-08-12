@@ -21,11 +21,13 @@ type RouteControlsProps = {
  * is why the label is the accessible name in both arrangements and the icon
  * never appears without it being one hover or one focus away (docs/DESIGN.md).
  *
- * Both the icon and the label are always in the DOM, and the arrangement the
- * footer puts these in decides which one is drawn: the bar shows the label,
- * the rail shows the icon and defers the label to a tooltip. Neither is ever
- * removed from the accessibility tree, so the button's accessible name is the
- * visible sentence either way — no `aria-label` that could drift from it. */
+ * Both the icon and the label are always in the DOM. The face of the button is
+ * the icon in both of the footer's arrangements, and the label is a tooltip in
+ * both — hidden with `opacity` and never removed from the accessibility tree,
+ * so the button's accessible name stays the sentence on screen and there is no
+ * `aria-label` to drift from it. The cost of a face without words is that touch
+ * has no hover to reveal them; the gain is a phone footer of one row rather
+ * than two (docs/DESIGN.md). */
 export function RouteControls({ canUndo, canClear, onUndo, onClear }: RouteControlsProps) {
   const ref = useDisableMapClickPropagation<HTMLDivElement>()
 

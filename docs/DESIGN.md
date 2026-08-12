@@ -22,14 +22,26 @@ is left is Leaflet's own, for its attribution. Two bars and an untouched map
 between them is the whole layout.
 
 The split is what the two are, not where they sit. On a phone they are two bars,
-top and bottom. On anything wider they are two panels facing each other across
-the map: acting down the left edge, reporting in the top right corner (below).
+top and bottom. On anything wider they are two groups facing each other across
+the map: acting down the left edge, reporting in the top right corner — each of
+them two panels by then rather than one, since the same width that lets a bar
+stand up also lets the halves inside it come apart (below).
 
 The change-provider button is in the footer and not beside the distance
 because of that split, not because of where it fits: it is a thing you press,
 and next to the figure it was the only control in a bar that otherwise only
 reports. In the footer it reads as the third item of a toolbar — remove last
 waypoint, clear, change provider — which is what it is.
+
+Its glyph is a gear and not a key. A key was the more precise of the two: there
+is exactly one setting behind that button and it is literally an API key, where
+a gear says "settings, plural, contents unknown" — a category this app does not
+have. It is also, on a map, the word for a legend. The gear wins on the thing
+that decides it: it is the shape a visitor already knows to press to change how
+an app is set up, and the precision the key had was only available to someone
+who had already worked out what the button does. What the key was actually
+carrying is carried better by the label, which is now on screen (below) rather
+than in an `aria-label` no sighted visitor ever reads.
 
 The locate control (`005-locate-visitor-position`) reads the split the other
 way and still lands in the header. It is also pressable, like change-provider,
@@ -65,18 +77,35 @@ column. What it costs is not area — the same card stacked onto the rail would
 cover the same map — it is that a band across the width **cuts the map in
 two**, and the strip it leaves above itself is 100px deep, which is not enough
 map to draw a route in. Taken off, the map is one surface from edge to edge.
-So at 60rem the bar stands up into a **card in the top right corner**, its
-three things stacked in the order they were in across it: name, search, answer.
+So at 60rem the bar stands up into the **top right corner**, its three things
+in the order they were in across it: name, search, answer.
+
+And there it stops being one panel. The wordmark and the search row are one
+thing — where the map is put — and the distance is another: the one number the
+app exists to produce. Boxed together, the figure is the third row of a stack
+under a text field, and the `border-top` that used to be drawn above it was the
+admission — a rule drawn to say *these are separate* inside a box built to say
+they are not. So above 60rem there are **two panels in that corner**, a search
+card and the answer under it, with real air between them. The gap costs 12px of
+column and gives a strip of map back; the figure is the only thing in its box,
+which is what this whole design says it should be. The `<header>` is then only
+the frame they are stacked in, and — exactly like the footer's rail — it draws
+nothing and catches nothing, because a gap that looks like map and answers
+clicks like a panel is the worst of both.
+
+On a phone the split does not happen: two panels there means a second border, a
+second padding and a second shadow out of the screen with the least height to
+spend, and one panel of two rows already separates the two halves by row. Both
+arrangements come out of one set of markup, the same `display: contents`
+device the footer uses.
 
 Right, and not stacked onto the rail on the left, is arithmetic rather than
-taste. The card is about 200px tall and the rail about 300px; 500px of stacked
+taste. The pair is about 215px tall and the rail about 300px; 515px of stacked
 panel is 85% of the column height a laptop actually has, and under about 570px
 of viewport it does not fit at all — with no fallback left, since the rail
 already spends its own on bottom-aligning. A column filled like that is a
-sidebar, which is the bottom bar turned on its side. It would also leave the
-distance boxed between a text field and a toolbar, when the figure is the
-second loudest thing on the screen by design. Facing each other across the map,
-each has a corner of its own and the map has its middle.
+sidebar, which is the bottom bar turned on its side. Facing each other across
+the map, each has a corner of its own and the map has its middle.
 
 The trade the rail makes is worth naming. On a full-viewport map the left edge
 is not dead space the way it is in a drawing tool — it is drawing surface, and
@@ -164,13 +193,29 @@ values or bare pixel spacing in component styles.
   follow are what keep that from happening, and `e2e/mobile.spec.ts` holds them
   in place at phone sizes with touch emulation on (`overlay-layout.spec.ts`
   separately checks that overlays don't cover each other at three widths).
-- **The header is a bar or a card, and the hatch has to turn with it.** The
-  texture behind it is drawn to run *along* a bar and fade out before the
-  wordmark and the figure, which is a horizontal mask. Stood up into the card
-  that mask lies behind the whole panel, including the distance — a texture
-  competing with the one number the app exists to produce. It fades down the
-  card instead, gone before the figure. The mask's stops are alpha and not
-  palette colours, which is the one place a raw value is allowed here.
+- **The header is a bar or two panels, and the hatch has to turn with it.** The
+  texture is drawn to run *along* a bar and fade out before the wordmark and the
+  figure, which is a horizontal mask. Stood up, that mask would lie behind the
+  whole panel, including the distance — a texture competing with the one number
+  the app exists to produce — so it fades downward instead. Above `60rem` it
+  also changes owner: the `<header>` is a frame that draws nothing, so the hatch
+  belongs to the search card, and the figure is in a panel the texture can no
+  longer reach at all. The gradient itself is declared once as a local
+  `--hatch` custom property and read by whichever element is currently the
+  panel. The mask's stops are alpha and not palette colours, which is the one
+  place a raw value is allowed here.
+- **The distance gets a panel of its own as soon as there is room for one.**
+  Above `60rem` the header is two panels in the corner — the search card, then
+  the answer under it with real air between. A `border-top` inside one box was
+  the admission that the two halves are different in kind; the gap is the
+  honest form of it, and it leaves the figure the only thing in its box, which
+  is what "the route and the number are the loudest things" asks for. On a phone
+  it stays one panel: a second border, padding and shadow is not worth it on the
+  screen with the least height, and two rows already separate the halves. Both
+  arrangements come from one set of markup (`display: contents` on the search
+  group), the device `AppFooter` already used, and the `<header>` frame that
+  results must draw nothing and catch nothing for the same reason the rail's
+  does.
 - **The search row is two controls sharing one line, not one stretched to fit
   both.** The address search used to be the only thing in its grid area, sized
   with `width: 100%`; locate (`005-locate-visitor-position`) landed beside it,
@@ -188,11 +233,13 @@ values or bare pixel spacing in component styles.
   the name and the distance facing each other across the first, the search
   spanning the second — because no arrangement fits a field, a button and a
   display figure on one 360px line. It becomes a single row at `44rem`, which is
-  also where a phone in landscape lands. The footer does the same by wrapping:
-  the tool row (undo, clear, change provider) and the zoom pair share a row
-  while they fit and take one each when they don't, which on a phone is always
-  — three tools and a zoom pair are some 60px wider than a 393px screen. Nothing
-  is positioned from either bar's height, so both are free to be intrinsic.
+  also where a phone in landscape lands. The footer keeps the ability by
+  wrapping — the tool row and the zoom pair share a line while they fit and take
+  one each when they don't — but no longer uses it at any width: once the
+  corrections became icons (below) the three tools and the zoom pair come to
+  280px, and the bar is one row from 320px up. That is worth 56px of map on the
+  screen with the least of it. Nothing is positioned from either bar's height,
+  so both are free to be intrinsic.
 - **A control that wraps to its own row is still at the end of the bar it
   wraps out of.** `justify-content` only spaces items that share a line, so the
   zoom pair carries `margin-left: auto` instead: an auto margin collects the
@@ -224,29 +271,41 @@ values or bare pixel spacing in component styles.
   the header's height is intrinsic and nothing may be positioned from it, so
   the fallback has to be the alignment that cannot reach the header from any
   distance, which is the one furthest from it.
-- **In the rail a correction control is an icon, and its label is one hover or
-  one focus away** (`RouteControls`). A column one control wide cannot carry
-  "Remove last waypoint", so the label leaves the face of the button and
-  becomes a tooltip beside it — on `:focus-visible` as well as `:hover`, since
-  a control whose name only ever appears to a mouse is a control the keyboard
+- **Every tool is a square glyph, and its label is one hover or one focus
+  away** (`RouteControls`, `ReopenCredentialsButton`). The footer's three tools
+  are one row of identical 48px buttons in the bar and one column of them in the
+  rail; no arrangement draws a word on a face. The rail forced this on two of
+  them — a column one control wide cannot carry "Remove last waypoint" — and the
+  bar then had two wordy buttons beside a lone gear, three tools reading as two
+  kinds of thing, and a row too wide to share with zoom. One rule for all three
+  costs 56px of bar height on a phone in the other direction.
+  The label becomes a tooltip on `:focus-visible` as well as `:hover`, since a
+  control whose name only ever appears to a mouse is a control the keyboard
   operates blind. It is hidden with `opacity`, never `display: none` or
   `visibility: hidden`: those take the label out of the accessibility tree, and
-  the label *is* the button's accessible name. There is no `aria-label`
-  anywhere in this pair, precisely so the name cannot drift from the sentence
-  on screen. The icons are the conventional pair — an undo arrow and a
-  waste basket — knowing that the arrow implies a reversibility the label
-  spends its words denying (FR-015, BR-006); the label is what settles it, and
-  it is never more than a hover away. Both arrangements carry exactly one of
-  the two: the bar draws the label and not the icon, since two icons plus two
-  labels is some 56px added to a row that already gives back its side padding
-  at `25rem` to stay on one line.
+  the label *is* the button's accessible name. There is no `aria-label` on any
+  of the three, precisely so the name cannot drift from the sentence on screen.
+  **What this costs is not small and is not hidden:** touch has neither hover
+  nor focus rings, so on a phone the sentence is never drawn, and the icons are
+  on their own — the conventional undo arrow, waste basket and gear, the first
+  of which implies a reversibility its label spends its words denying (FR-015,
+  BR-006) and the last of which says "this configures something" and nothing
+  about what. On a phone that is what the visitor gets. It is a deliberate
+  trade for a bar of one row, not an oversight.
+  Where the tooltip opens follows the map, not the control: sideways in the
+  rail, upward in the bar, and anchored to whichever edge of the button has room
+  — left for the corrections at the start of the bar, right for the gear at its
+  end. Never over another control, which has no exceptions. Upward in the bar it
+  can meet the routing status; that is a live region rather than a control, so
+  the tooltip carries a `z-index` and wins the overlap outright for as long as
+  the pointer rests there.
 - **Below `25rem` both bars narrow their viewport-edge offset** from
-  `--space-lg` to `--space-sm`. At 360px the corrections and the zoom pair are
-  a dozen pixels wider than the row they share, and without those pixels the
-  footer takes a third row of a screen that has 640px of height in all — while
-  the alternative that fits, letting the zoom pair hang over the panel's edge,
-  is not one. `AppHeader` narrows at the same width for no reason of its own,
-  so the two bars stay the same width as each other.
+  `--space-lg` to `--space-sm`. This was load-bearing when the corrections spelt
+  their labels out and the footer needed every pixel to stay off a third row; a
+  bar of square glyphs fits at 320px without it. What it still buys is the
+  header, where those pixels go to the address field on the narrowest screens —
+  and the two bars keep the same offset as each other, which is the reason
+  `AppFooter` keeps the rule rather than the reason it was written.
 - **Everything is `border-box`** (`src/index.css`). Overlay controls are sized
   by a minimum height that doubles as the row height the corner-stacking
   offsets are computed from; under `content-box` that height would exclude

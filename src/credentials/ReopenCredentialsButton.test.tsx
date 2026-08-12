@@ -14,6 +14,17 @@ describe('ReopenCredentialsButton', () => {
     expect(onClick).toHaveBeenCalled()
   })
 
+  it('is named by text on screen rather than by an aria-label, so the two cannot drift', () => {
+    render(<ReopenCredentialsButton onClick={vi.fn()} />)
+
+    // The glyph is a gear, which says "this configures something" and nothing
+    // about what — so the sentence that says it is a real element, hidden with
+    // opacity by the stylesheet and never taken out of the accessibility tree.
+    const button = screen.getByRole('button', { name: /change routing provider/i })
+    expect(button).not.toHaveAttribute('aria-label')
+    expect(button).toContainElement(screen.getByText('Change routing provider'))
+  })
+
   it('is reachable from the keyboard alone, like every other control', async () => {
     const onClick = vi.fn()
     const user = userEvent.setup()

@@ -163,7 +163,10 @@ test('a slow routing response shows in-progress feedback instead of looking like
   await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.4)
   await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.6)
 
-  await expect(page.getByText(/routing/i)).toBeVisible()
+  // The live region and not just the words: the change-provider button now
+  // carries its own name on screen ("Change routing provider"), so a bare text
+  // match on /routing/i has two candidates.
+  await expect(page.getByRole('status').filter({ hasText: /routing/i })).toBeVisible()
   await expect(page.getByText('0.9 km')).toBeVisible()
 })
 

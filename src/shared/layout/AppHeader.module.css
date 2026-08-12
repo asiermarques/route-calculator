@@ -4,6 +4,14 @@
  * button and a display figure on one line. It collapses to a single row as
  * soon as there is width for one. */
 .header {
+  /* Declared once here and read by whichever element is drawing the panel: the
+   * header itself while it is one box, the search card once it is two
+   * (`@media (min-width: 60rem)` below). */
+  --hatch: repeating-linear-gradient(
+    115deg,
+    transparent 0 9px,
+    var(--color-accent-veil) 9px 11px
+  );
   position: absolute;
   top: var(--space-lg);
   left: var(--space-lg);
@@ -33,14 +41,19 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    115deg,
-    transparent 0 9px,
-    var(--color-accent-veil) 9px 11px
-  );
+  background: var(--hatch);
   /* Opacity stops, not palette colours: a mask reads only the alpha channel,
    * and the band has to fade out before it reaches the wordmark or the figure. */
   mask-image: linear-gradient(to right, transparent 30%, #000 55%, transparent 95%);
+}
+
+/* Not a box while the header is one panel: the wordmark and the search row are
+ * direct items of its grid, so they take the areas they always had and a phone
+ * lays out exactly as it did before this wrapper existed. It becomes the upper
+ * of the two panels at the split below, which is the one place the grouping is
+ * real — the same device `AppFooter` uses on its own `.actions`. */
+.find {
+  display: contents;
 }
 
 .brand {
@@ -124,9 +137,10 @@
   }
 }
 
-/* The card (60rem and up): the bar stops spanning the width and becomes a
- * panel in the top right corner, the three things it holds stacked in the
- * order they were in across it — name, search, answer.
+/* The corner (60rem and up): the bar stops spanning the width and the
+ * `<header>` stops being a panel at all. It becomes the frame two panels are
+ * stacked in, in the top right corner — the search card (wordmark, address
+ * field, locate) and, under it with real air between them, the answer.
  *
  * It moves for the same reason the footer did, and it is the larger half of
  * that: a full-width bar is 1408×97 on a laptop, against 66px of rail. What it
@@ -136,37 +150,76 @@
  * Taken off, the map is one surface from edge to edge again.
  *
  * Right, and not stacked onto the rail on the left, is a matter of vertical
- * budget rather than taste: a card is ~200px and the rail is ~300px, and 500px
- * of stacked panel is 85% of the column a laptop actually has — a sidebar,
- * which is the thing that was just taken off the bottom, turned on its side.
- * It also leaves the figure boxed between a text field and a toolbar, and the
- * figure is the second loudest thing on this screen by design. Over here it
- * has a corner of its own, and the two panels face each other across the map:
- * what is acted on the route with at one edge, what is read off it at the
- * other. */
+ * budget rather than taste: the pair is ~215px and the rail is ~300px, and
+ * 515px of stacked panel is 85% of the column a laptop actually has — a
+ * sidebar, which is the thing that was just taken off the bottom, turned on
+ * its side. Over here the two face the rail across the map: what the route is
+ * acted on with at one edge, what is read off it at the other.
+ *
+ * Two panels and not one box with a rule in it, because the two halves are not
+ * the same kind of thing: above is where the map is put somewhere, below is the
+ * one number the app exists to produce. Boxed under a text field the figure is
+ * the third row of a stack, and the `border-top` that used to sit above it was
+ * the admission — a line drawn to say "these are separate" inside a box built
+ * to say they are not. Given its own panel it is the only thing in it, which is
+ * what the design says it should be. The gap costs 12px of column and gives
+ * back a strip of map between them; on a phone it is not worth a second border,
+ * a second padding and a second shadow, so the split does not happen there. */
 @media (min-width: 60rem) {
   .header {
     left: auto;
     /* Wide enough for the search row it has to hold — a 16px field and a
-     * button beside it — and no wider: past this the card starts eating the
-     * map it was just taken off. */
+     * button beside it — and no wider: past this the panels start eating the
+     * map they were just taken off. */
     width: 22rem;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'brand'
-      'search'
-      'readout';
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     gap: var(--space-md);
-    padding: var(--space-md);
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
+    /* The frame draws nothing and, just as importantly, catches nothing: the
+     * gap it opens between the panels would otherwise look like map and behave
+     * like an overlay. The panels take their own clicks back below, and their
+     * events still bubble through here, so the guard that keeps a press on a
+     * control from placing a waypoint under it goes on working. */
+    pointer-events: none;
     /* Arrives from the edge it lives on, the way the rail does from its own. */
     animation-name: cardIn;
   }
 
-  /* The hatch was drawn to run *along* a bar and fade out before the wordmark
-   * and the figure. Stood up, it has to fade along the other axis or it lies
-   * behind the whole card, and a texture behind the distance is a texture
-   * competing with the one number the app exists to produce. */
+  /* The texture belongs to the panel, not to the frame. */
   .header::before {
+    content: none;
+  }
+
+  .find {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-panel);
+    overflow: hidden;
+    pointer-events: auto;
+  }
+
+  /* The hatch was drawn to run *along* a bar and fade out before the wordmark
+   * and the figure. Stood up it has to fade along the other axis, and it now
+   * has one less thing to clear: the figure has left this panel altogether, so
+   * the texture can never reach it. */
+  .find::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--hatch);
     mask-image: linear-gradient(to bottom, #000 8%, transparent 62%);
   }
 
@@ -174,12 +227,14 @@
     max-width: none;
   }
 
-  /* The rule that separated the figure from the controls beside it becomes the
-   * rule that separates it from the controls above it. */
+  /* The rule that separated the figure from the controls beside it is no longer
+   * a rule: it is the panel's own edge. Nothing else is in here with it. */
   .readout {
-    justify-self: stretch;
-    padding: var(--space-sm) 0 0;
-    border-top: 1px solid var(--color-border);
-    border-left: none;
+    padding: var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-panel);
+    pointer-events: auto;
   }
 }

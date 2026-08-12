@@ -25,6 +25,22 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 800 },
 ]
 
+/** Both bars arrive with a 460ms entrance that moves them in from their own
+ * edge, and a box read while that is still running has not landed yet — two
+ * reads taken a few frames apart disagree by however far the transform moved
+ * between them, which is a flake in any test that compares one box to another.
+ * Waits for the element's own animations only: the routing status pulse never
+ * finishes, and a subtree wait would never return. Under
+ * `prefers-reduced-motion` there is nothing to wait for and this resolves at
+ * once. */
+async function landed(page: Page, selector: 'header' | 'footer') {
+  await page
+    .locator(selector)
+    .evaluate((element) =>
+      Promise.all(element.getAnimations().map((animation) => animation.finished)),
+    )
+}
+
 /** What is under a point of the viewport: the map itself, or something drawn
  * over it. `elementFromPoint` answers the same question a click does. */
 async function coveringTheMapAt(page: Page, x: number, y: number) {
@@ -46,6 +62,7 @@ test('on a wide screen the footer is a rail down the left, not a bar across the 
   await page.goto('/')
   await supplyCredentials(page)
 
+  await landed(page, 'footer')
   const clear = (await page.getByRole('button', { name: /^clear$/i }).boundingBox())!
   const zoomOut = (await page.getByRole('button', { name: /zoom out/i }).boundingBox())!
 
@@ -69,7 +86,7 @@ test('on a wide screen the footer is a rail down the left, not a bar across the 
   expect(await coveringTheMapAt(page, clear.x + clear.width / 2, 200)).toBe('the map')
 })
 
-test('on a wide screen the header is a card in the corner, not a band across the top', async ({
+test('on a wide screen the header is two panels in the corner, not a band across the top', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
@@ -78,9 +95,26 @@ test('on a wide screen the header is a card in the corner, not a band across the
   await page.goto('/')
   await supplyCredentials(page)
 
+  await landed(page, 'header')
+  await landed(page, 'footer')
   const header = (await page.locator('header').boundingBox())!
   expect(header.width, 'the header still spans the screen').toBeLessThan(400)
   expect(header.x + header.width, 'the card is not against the right edge').toBeGreaterThan(1280 - 40)
+
+  // Two panels, not one box with a rule in it: the search above, the answer
+  // below, and map showing between them. The `<header>` here is only the frame
+  // they are stacked in, which is why it must catch nothing — a gap that looks
+  // like map and behaves like an overlay is the worst of both.
+  const panels = page.locator('header > div')
+  await expect(panels).toHaveCount(2)
+  const find = (await panels.first().boundingBox())!
+  const readout = (await panels.last().boundingBox())!
+  expect(readout.y, 'the answer is not below the search').toBeGreaterThan(find.y + find.height)
+  const between = { x: find.x + find.width / 2, y: (find.y + find.height + readout.y) / 2 }
+  expect(
+    await coveringTheMapAt(page, between.x, between.y),
+    'the two panels are one box after all',
+  ).toBe('the map')
 
   // The point of moving it: the band it used to draw cut the map in two, and
   // what it left above itself was a 100px strip no route fits in. The top of
@@ -97,41 +131,131 @@ test('on a wide screen the header is a card in the corner, not a band across the
   expect(header.x, 'the card and the rail are on the same side').toBeGreaterThan(clear.x + 400)
 })
 
-test('in the rail a correction is named by a tooltip, and the tooltip lands on map', async ({
+test('a correction is named by a tooltip in both arrangements, and it lands on map', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1280, height: 800 })
   await mockTiles(page)
   await mockRouting(page, ['error'])
+
+  for (const viewport of [
+    { name: 'the bar', width: 768, height: 1024, avoidsTheStatus: false },
+    { name: 'the rail', width: 1280, height: 800, avoidsTheStatus: true },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await page.goto('/')
+    await supplyCredentials(page)
+
+    // The widest state either arrangement has: a routing error, which is prose,
+    // on screen at the same time as every control.
+    const map = (await page.locator('.leaflet-container').boundingBox())!
+    await page.mouse.click(map.x + map.width * 0.4, map.y + map.height * 0.4)
+    await page.mouse.click(map.x + map.width * 0.6, map.y + map.height * 0.5)
+    await expect(page.getByText(/could not find a route/i)).toBeVisible()
+
+    const undo = page.getByRole('button', { name: /remove last waypoint/i })
+    const label = undo.locator('span')
+    const opacity = () => label.evaluate((element) => getComputedStyle(element).opacity)
+
+    // The face is the icon in both arrangements, so the label is a tooltip in
+    // both — and it is the button's accessible name, so it is hidden with
+    // opacity and never taken out of the tree.
+    expect(await opacity(), `the label is on the face of the button in ${viewport.name}`).toBe('0')
+    await undo.hover()
+    await expect.poll(opacity, { message: `hovering the control does not name it` }).toBe('1')
+
+    const tooltip = (await label.boundingBox())!
+    for (const [name, locator] of [
+      ['clear', page.getByRole('button', { name: /^clear$/i })],
+      ['change routing provider', page.getByRole('button', { name: /change routing provider/i })],
+      ['zoom in', page.getByRole('button', { name: /zoom in/i })],
+      ['zoom out', page.getByRole('button', { name: /zoom out/i })],
+    ] as const) {
+      const box = (await locator.boundingBox())!
+      expect(overlaps(tooltip, box), `the tooltip covers ${name} in ${viewport.name}`).toBe(false)
+    }
+
+    // In the rail it must also clear the routing error, which hangs off the same
+    // side the tooltips open on — a message with a tooltip landing on it every
+    // time the visitor reaches for undo. In the bar the tooltip opens upward,
+    // where the status is, and wins that overlap on purpose (docs/DESIGN.md):
+    // the status is a live region rather than a control, and the tooltip is
+    // there only while the pointer is.
+    const status = (await page
+      .getByRole('status')
+      .filter({ hasText: /could not find/i })
+      .boundingBox())!
+    if (viewport.avoidsTheStatus) {
+      expect(overlaps(tooltip, status), 'the tooltip covers the routing error').toBe(false)
+    }
+  }
+})
+
+test('the gear names itself on hover, in both arrangements, without covering a control', async ({
+  page,
+}) => {
+  await mockTiles(page)
+  await mockRouting(page, ['error'])
+
+  for (const viewport of [
+    { name: 'the bar', width: 768, height: 1024 },
+    { name: 'the rail', width: 1280, height: 800 },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await page.goto('/')
+    await supplyCredentials(page)
+
+    // The widest state either arrangement has: a routing error on screen at the
+    // same time as every control.
+    const map = (await page.locator('.leaflet-container').boundingBox())!
+    await page.mouse.click(map.x + map.width * 0.4, map.y + map.height * 0.4)
+    await page.mouse.click(map.x + map.width * 0.6, map.y + map.height * 0.5)
+    await expect(page.getByText(/could not find a route/i)).toBeVisible()
+
+    const gear = page.getByRole('button', { name: /change routing provider/i })
+    const label = gear.locator('span')
+    const opacity = () => label.evaluate((element) => getComputedStyle(element).opacity)
+
+    // Icon-only in both arrangements, so its name is a tooltip in both — and
+    // hidden with opacity, never removed, because it is the accessible name.
+    expect(await opacity(), `the gear is already labelled in ${viewport.name}`).toBe('0')
+    await gear.hover()
+    await expect.poll(opacity, { message: `hovering the gear does not name it` }).toBe('1')
+
+    // Wherever it opens, it opens over map: a tooltip drawn over a control is a
+    // control that cannot be pressed.
+    const tooltip = (await label.boundingBox())!
+    for (const [name, locator] of [
+      ['clear', page.getByRole('button', { name: /^clear$/i })],
+      ['undo', page.getByRole('button', { name: /remove last waypoint/i })],
+      ['zoom in', page.getByRole('button', { name: /zoom in/i })],
+      ['zoom out', page.getByRole('button', { name: /zoom out/i })],
+    ] as const) {
+      const box = (await locator.boundingBox())!
+      expect(overlaps(tooltip, box), `the gear's tooltip covers ${name} in ${viewport.name}`).toBe(
+        false,
+      )
+    }
+  }
+})
+
+test('on a phone the header stays a single panel', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 700 })
+  await mockTiles(page)
+  await mockRouting(page, [{ distanceMeters: 1000 }])
   await page.goto('/')
   await supplyCredentials(page)
 
-  // The widest thing the rail ever has beside it: a routing error, which is
-  // prose and which hangs off the same side the tooltips open on.
-  const map = (await page.locator('.leaflet-container').boundingBox())!
-  await page.mouse.click(map.x + map.width * 0.4, map.y + map.height * 0.4)
-  await page.mouse.click(map.x + map.width * 0.6, map.y + map.height * 0.5)
-  await expect(page.getByText(/could not find a route/i)).toBeVisible()
-
-  const undo = page.getByRole('button', { name: /remove last waypoint/i })
-  const label = undo.locator('span')
-  const opacity = () => label.evaluate((element) => getComputedStyle(element).opacity)
-
-  // The label is the button's accessible name in both arrangements, so it is
-  // hidden with opacity and never taken out of the tree.
-  expect(await opacity(), 'the label is on the face of the button in the rail').toBe('0')
-  await undo.hover()
-  await expect.poll(opacity, { message: 'hovering the control does not name it' }).toBe('1')
-
-  // And it opens over map rather than over the one message the app has to
-  // show: a tooltip that lands on the routing error puts it there every time
-  // the visitor reaches for undo.
-  const tooltip = (await label.boundingBox())!
-  const status = (await page
-    .getByRole('status')
-    .filter({ hasText: /could not find/i })
-    .boundingBox())!
-  expect(overlaps(tooltip, status), 'the tooltip covers the routing error').toBe(false)
+  // Two panels and a gap is the same wide-screen luxury the footer's rail is:
+  // at 375px the split costs a second border, a second padding and a second
+  // shadow out of the screen with the least height to spend. So the `<header>`
+  // is still the panel here, not the frame two panels are stacked in — which is
+  // a thing this can ask directly, since a frame draws no background.
+  const background = await page
+    .locator('header')
+    .evaluate((element) => getComputedStyle(element).backgroundColor)
+  expect(background, 'the header is a frame rather than a panel on a phone').not.toBe(
+    'rgba(0, 0, 0, 0)',
+  )
 })
 
 test('on a phone the footer stays a single bar, with every control inside it', async ({ page }) => {
